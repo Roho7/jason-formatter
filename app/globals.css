@@ -64,7 +64,7 @@
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
+  --muted:rgb(197, 208, 211);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
@@ -127,6 +127,9 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .inset-shadow {
+    @apply bg-[linear-gradient(183deg,rgba(236,241,253,0)_13.9%,rgba(236,241,253,0.3)_121.71%),linear-gradient(0deg,#2E3038,#2E3038)] bg-clip-text leading-tight text-transparent filter-[url(#inset-shadow)]
   }
 }
 

@@ -1,4 +1,8 @@
 // JSON formatting utilities
+"use client";
+
+import { toast } from "sonner";
+
 interface FormatJsonParams {
   jsonString: string;
   indent?: number;
@@ -47,26 +51,31 @@ export const parseJsonSafely = ({jsonString}:{jsonString: string}) => {
   };
 
 // JSON Storage utilities
-interface JsonEntry {
+export interface JsonEntry {
   id: string;
   content: string;
   timestamp: number;
-  type: 'formatter' | 'diff-left' | 'diff-right';
+  type: 'format' | 'diff-left' | 'diff-right' | 'minify';
   title?: string;
 }
 
 const STORAGE_KEY = 'json-formatter-history';
+const TABS_KEY = 'json-formatter-tabs';
 const MAX_ENTRIES = 100; // Limit to prevent storage bloat
 
-export const saveJsonEntry = (content: string, type: JsonEntry['type'], title?: string): void => {
+export const saveJsonEntry = (content: string, type: JsonEntry['type'], id: string, title?: string): void => {
   try {
-    const entries = getJsonHistory();
+    // Check if we're in the browser environment
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const entries = getJsonHistory(type, id);
     const newEntry: JsonEntry = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: id,
       content,
       timestamp: Date.now(),
       type,
-      title
+      title,
     };
 
     // Add new entry to the beginning
@@ -75,25 +84,31 @@ export const saveJsonEntry = (content: string, type: JsonEntry['type'], title?: 
     // Keep only the latest MAX_ENTRIES
     const trimmedEntries = entries.slice(0, MAX_ENTRIES);
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmedEntries));
+    localStorage.setItem(`${STORAGE_KEY}-${type}-${id}`, JSON.stringify(trimmedEntries));
   } catch (error) {
+    toast.error('Failed to save JSON entry:');
     console.error('Failed to save JSON entry:', error);
   }
 };
 
-export const getJsonHistory = (): JsonEntry[] => {
+export const getJsonHistory = (type: JsonEntry['type'], id: string): JsonEntry[] => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    // Check if we're in the browser environment
+    if (typeof window === 'undefined') {
+      return [];
+    }
+    const stored = localStorage.getItem(`${STORAGE_KEY}-${type}-${id}`);
     return stored ? JSON.parse(stored) : [];
   } catch (error) {
+    toast.error('Failed to load JSON history:');
     console.error('Failed to load JSON history:', error);
     return [];
   }
 };
 
-export const getLatestJsonEntry = (type?: JsonEntry['type']): JsonEntry | null => {
+export const getLatestJsonEntry = (type: JsonEntry['type'], id: string): JsonEntry | null => {
   try {
-    const entries = getJsonHistory();
+    const entries = getJsonHistory(type, id);
     if (type) {
       return entries.find(entry => entry.type === type) || null;
     }
@@ -104,19 +119,27 @@ export const getLatestJsonEntry = (type?: JsonEntry['type']): JsonEntry | null =
   }
 };
 
-export const deleteJsonEntry = (id: string): void => {
+export const deleteJsonEntry = (type: JsonEntry['type'], id: string): void => {
   try {
-    const entries = getJsonHistory();
+    // Check if we're in the browser environment
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const entries = getJsonHistory(type, id);
     const filteredEntries = entries.filter(entry => entry.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredEntries));
+    localStorage.setItem(`${STORAGE_KEY}-${type}-${id}`, JSON.stringify(filteredEntries));
   } catch (error) {
     console.error('Failed to delete JSON entry:', error);
   }
 };
 
-export const clearJsonHistory = (): void => {
+export const clearJsonHistory = (type: JsonEntry['type'], id: string): void => {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    // Check if we're in the browser environment
+    if (typeof window === 'undefined') {
+      return;
+    }
+    localStorage.removeItem(`${STORAGE_KEY}-${type}-${id}`);
   } catch (error) {
     console.error('Failed to clear JSON history:', error);
   }
@@ -128,12 +151,13 @@ export const isCtrlOrCmd = (event: KeyboardEvent): boolean => {
 };
 
 export const handlePasteEvent = (
-  event: KeyboardEvent,
+
   currentContent: string,
   type: JsonEntry['type'],
+  id: string,
   callback?: () => void
 ): void => {
-  if (isCtrlOrCmd(event) && event.key === 'v') {
+ 
     // Small delay to allow paste to complete
     setTimeout(() => {
       try {
@@ -143,7 +167,7 @@ export const handlePasteEvent = (
           // Generate a title from the JSON content
           const parsed = JSON.parse(currentContent);
           const title = generateJsonTitle(parsed);
-          saveJsonEntry(currentContent, type, title);
+          saveJsonEntry(currentContent, type, id, title);
           callback?.();
         }
       } catch (error) {
@@ -151,7 +175,7 @@ export const handlePasteEvent = (
         console.log('Paste content was not valid JSON, not saving to history');
       }
     }, 100);
-  }
+
 };
 
 // Helper to generate a meaningful title for JSON entries
@@ -181,3 +205,21 @@ const generateJsonTitle = (jsonObj: any): string => {
     return 'JSON Object';
   }
 };
+
+
+export const getTabs = () =>{
+  // Check if we're in the browser environment
+  if (typeof window === 'undefined') {
+    return [{ id: '1', label: 'Tab 1' }];
+  }
+  const tabs = localStorage.getItem(TABS_KEY);
+  return tabs ? JSON.parse(tabs) : [{ id: '1', label: 'Tab 1' }];
+}
+
+export const saveTabs = (tabs: { id: string; label: string; }[]) =>{
+  // Check if we're in the browser environment
+  if (typeof window === 'undefined') {
+    return;
+  }
+  localStorage.setItem(TABS_KEY, JSON.stringify(tabs));
+}

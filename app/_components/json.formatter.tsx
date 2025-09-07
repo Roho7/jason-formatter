@@ -1,13 +1,41 @@
 import React, { useState, useCallback, useEffect } from "react";
 import JsonEditor from "./json.editor";
 import JsonDiff from "./json.diff";
-import { Copy, Download, Upload, Check, AlertCircle, History } from "lucide-react";
-import { formatJson, minifyJson, validateJson, saveJsonEntry, getLatestJsonEntry, handlePasteEvent } from "../_utils/utils";
+import {
+  Copy,
+  Download,
+  Upload,
+  Check,
+  AlertCircle,
+  History,
+} from "lucide-react";
+import {
+  formatJson,
+  minifyJson,
+  validateJson,
+  saveJsonEntry,
+  getLatestJsonEntry,
+  handlePasteEvent,
+  JsonEntry,
+} from "../_utils/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
-const JsonFormatter = () => {
-  const [activeTab, setActiveTab] = useState("format");
-  const [inputJson, setInputJson] = useState("");
+const JsonFormatter = ({
+  id,
+  label,
+  activeTab,
+  setActiveTab,
+}: {
+  id: string;
+  label: string;
+  activeTab: JsonEntry["type"];
+  setActiveTab: (tab: JsonEntry["type"]) => void;
+}) => {
+  const [inputJson, setInputJson] = useState(
+    '{\n  "name": "Jason Derulo",\n  "age": 30,\n  "email": "jason@derulo.com",\n  "hobbies": ["😎", "rizz", "gooning"],\n  "address": {\n    "street": "Yo mama house",\n    "city": "New York",\n    "zipCode": "80085"\n  }\n}',
+  );
   const [outputJson, setOutputJson] = useState("");
   const [validationResult, setValidationResult] = useState<{
     valid: boolean;
@@ -24,29 +52,25 @@ const JsonFormatter = () => {
     { id: "diff", label: "Compare", icon: "🔍" },
   ];
 
-  // Load the latest JSON entry on component mount
   useEffect(() => {
-    const latestEntry = getLatestJsonEntry('formatter');
-    if (latestEntry && latestEntry.content.trim()) {
-      setInputJson(latestEntry.content);
-    } else {
-      // Default JSON if no history exists
-      setInputJson('{\n  "name": "Jason Derulo",\n  "age": 30,\n  "email": "jason@derulo.com",\n  "hobbies": ["😎", "rizz", "gooning"],\n  "address": {\n    "street": "Yo mama house",\n    "city": "New York",\n    "zipCode": "80085"\n  }\n}');
+    if (typeof window !== "undefined") {
+      const latestEntry = getLatestJsonEntry("format", id);
+      if (latestEntry && latestEntry.content.trim()) {
+        setInputJson(latestEntry.content);
+      } else {
+        setInputJson(
+          '{\n  "name": "Jason Derulo",\n  "age": 30,\n  "email": "jason@derulo.com",\n  "hobbies": ["😎", "rizz", "gooning"],\n  "address": {\n    "street": "Yo mama house",\n    "city": "New York",\n    "zipCode": "80085"\n  }\n}',
+        );
+      }
     }
-  }, []);
+  }, [id]);
 
-  // Add keyboard event listener for paste detection
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      handlePasteEvent(event, inputJson, 'formatter', () => {
-        console.log('JSON saved to history!');
-      });
+    const handleKeyDown = () => {
+      handlePasteEvent(inputJson, "format", id, () => {});
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
+    handleKeyDown();
   }, [inputJson]);
 
   const handleFormat = useCallback(() => {
@@ -77,8 +101,8 @@ const JsonFormatter = () => {
     setOutputJson("");
   }, [inputJson]);
 
-  const handleTabChange = (tabId: string) => {
-    setActiveTab(tabId);
+  const handleTabChange = (tabId: JsonEntry["type"]) => {
+    setActiveTab(tabId as JsonEntry["type"]);
     setOutputJson("");
     setValidationResult({ valid: true, error: null });
   };
@@ -114,7 +138,7 @@ const JsonFormatter = () => {
         if (content.trim()) {
           try {
             JSON.parse(content); // Validate before saving
-            saveJsonEntry(content, 'formatter', `Uploaded: ${file.name}`);
+            saveJsonEntry(content, "format", id, `Uploaded: ${file.name}`);
           } catch (error) {
             // Don't save invalid JSON
           }
@@ -129,14 +153,14 @@ const JsonFormatter = () => {
   };
 
   const processJson = () => {
-    switch (activeTab) {
-      case "format":
+    switch (true) {
+      case activeTab === "format":
         handleFormat();
         break;
-      case "minify":
+      case activeTab === "minify":
         handleMinify();
         break;
-      case "validate":
+      case activeTab.startsWith("diff"):
         handleValidate();
         break;
       default:
@@ -150,11 +174,12 @@ const JsonFormatter = () => {
         const validation = validateJson({ jsonString: inputJson });
         if (validation.valid) {
           const parsed = JSON.parse(inputJson);
-          saveJsonEntry(inputJson, 'formatter');
-          console.log('JSON manually saved to history!');
+          saveJsonEntry(inputJson, activeTab as JsonEntry["type"], id);
+          toast.success("Saved to history!");
         }
       } catch (error) {
-        console.error('Cannot save invalid JSON');
+        toast.error("Cannot save invalid JSON");
+        console.error("Cannot save invalid JSON");
       }
     }
   };
@@ -166,7 +191,7 @@ const JsonFormatter = () => {
         {tabs.map((tab) => (
           <Button
             key={tab.id}
-            onClick={() => handleTabChange(tab.id)}
+            onClick={() => handleTabChange(tab.id as JsonEntry["type"])}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
               activeTab === tab.id
                 ? "bg-primary text-white"
@@ -187,8 +212,8 @@ const JsonFormatter = () => {
         </div>
       )}
 
-      {activeTab === "diff" ? (
-        <JsonDiff />
+      {activeTab.startsWith("diff") ? (
+        <JsonDiff pageTab={{ id, label }} />
       ) : (
         <>
           <div className="flex gap-4">
@@ -204,22 +229,21 @@ const JsonFormatter = () => {
                 >
                   {activeTab === "format" && "Format JSON"}
                   {activeTab === "minify" && "Minify JSON"}
-                  {activeTab === "validate" && "Validate JSON"}
+                  {activeTab.startsWith("diff") && "Diff JSON"}
                 </Button>
                 <Button
                   onClick={saveCurrentJson}
                   variant="outline"
-                  size="sm"
                   className="flex items-center gap-2"
                   disabled={!validationResult.valid}
                 >
                   <History className="w-4 h-4" />
                   Save
                 </Button>
-                <label className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
-                  <Upload className="w-4 h-4" />
+                <label className="flex items-center text-sm gap-2 px-3 py-2 h-9 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                  <Upload className="w-3 h-3" />
                   Upload File
-                  <input
+                  <Input
                     type="file"
                     accept=".json"
                     onChange={handleFileUpload}
@@ -230,35 +254,27 @@ const JsonFormatter = () => {
             </div>
 
             <div className="flex-1 flex items-center justify-between">
-              {activeTab === "validate" ? (
+              <>
                 <h3 className="text-lg font-semibold text-gray-800">
-                  Validation Result
+                  {activeTab === "format" ? "Formatted JSON" : "Minified JSON"}
                 </h3>
-              ) : (
-                <>
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    {activeTab === "format"
-                      ? "Formatted JSON"
-                      : "Minified JSON"}
-                  </h3>
-                  {outputJson && (
-                    <div className="flex items-center gap-2">
-                      <Button onClick={handleCopy}>
-                        {copySuccess ? (
-                          <Check className="w-4 h-4" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                        {copySuccess ? "Copied!" : "Copy"}
-                      </Button>
-                      <Button onClick={handleDownload}>
-                        <Download className="w-4 h-4" />
-                        Download
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
+                {outputJson && (
+                  <div className="flex items-center gap-2">
+                    <Button onClick={handleCopy}>
+                      {copySuccess ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                      {copySuccess ? "Copied!" : "Copy"}
+                    </Button>
+                    <Button onClick={handleDownload}>
+                      <Download className="w-4 h-4" />
+                      Download
+                    </Button>
+                  </div>
+                )}
+              </>
             </div>
           </div>
 
@@ -278,37 +294,7 @@ const JsonFormatter = () => {
 
             {/* Output Section */}
             <div className="flex-1">
-              {activeTab === "validate" ? (
-                <div
-                  className={`p-4 rounded-lg h-full ${
-                    validationResult.valid
-                      ? "bg-green-50 border border-green-200"
-                      : "bg-red-50 border border-red-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    {validationResult.valid ? (
-                      <Check className="w-5 h-5 text-green-500" />
-                    ) : (
-                      <AlertCircle className="w-5 h-5 text-red-500" />
-                    )}
-                    <span
-                      className={`font-medium ${
-                        validationResult.valid
-                          ? "text-green-800"
-                          : "text-red-800"
-                      }`}
-                    >
-                      {validationResult.valid ? "Valid JSON" : "Invalid JSON"}
-                    </span>
-                  </div>
-                  {validationResult.error && (
-                    <p className="mt-2 text-red-700 text-sm">
-                      {validationResult.error}
-                    </p>
-                  )}
-                </div>
-              ) : outputJson ? (
+              {outputJson ? (
                 <JsonEditor
                   value={outputJson}
                   readOnly={true}
@@ -329,7 +315,9 @@ const JsonFormatter = () => {
 
           {/* Auto-save notice */}
           <div className="text-xs text-gray-500 text-center">
-            💡 Tip: Press <kbd className="px-1 py-0.5 bg-gray-200 rounded">Cmd/Ctrl+V</kbd> to auto-save pasted JSON to history
+            💡 Tip: Press{" "}
+            <kbd className="px-1 py-0.5 bg-gray-200 rounded">Cmd/Ctrl+V</kbd> to
+            auto-save pasted JSON to history
           </div>
         </>
       )}
