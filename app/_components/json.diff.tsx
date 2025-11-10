@@ -7,6 +7,8 @@ import {
   saveJsonEntry,
   getLatestJsonEntry,
   handlePasteEvent,
+  formatJson,
+  validateJson,
 } from "../_utils/utils";
 
 interface DiffHighlight {
@@ -34,6 +36,9 @@ const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
   const [rightJson, setRightJson] = useState("");
   const [leftValid, setLeftValid] = useState(true);
   const [rightValid, setRightValid] = useState(true);
+  const [currentView, setCurrentView] = useState<'left' | 'right'>('left');
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   // Load the latest JSON entries on component mount
   useEffect(() => {
@@ -253,6 +258,33 @@ const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
     }
   }, [leftJson, rightJson, leftValid, rightValid]);
 
+  // Swipe detection constants
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentView === 'left') {
+      setCurrentView('right');
+    }
+    if (isRightSwipe && currentView === 'right') {
+      setCurrentView('left');
+    }
+  };
+
   const swapJsons = () => {
     const temp = leftJson;
     setLeftJson(rightJson);
@@ -261,10 +293,40 @@ const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
 
   const handleLeftChange = (value: string) => {
     setLeftJson(value);
+    
+    // Auto-format on paste detection
+    setTimeout(() => {
+      try {
+        const validation = validateJson({ jsonString: value });
+        if (validation.valid && value.trim()) {
+          const formatted = formatJson({ jsonString: value, indent: 2 });
+          if (formatted !== value) {
+            setLeftJson(formatted);
+          }
+        }
+      } catch (error) {
+        // Silent fail - don't format invalid JSON
+      }
+    }, 100);
   };
 
   const handleRightChange = (value: string) => {
     setRightJson(value);
+    
+    // Auto-format on paste detection
+    setTimeout(() => {
+      try {
+        const validation = validateJson({ jsonString: value });
+        if (validation.valid && value.trim()) {
+          const formatted = formatJson({ jsonString: value, indent: 2 });
+          if (formatted !== value) {
+            setRightJson(formatted);
+          }
+        }
+      } catch (error) {
+        // Silent fail - don't format invalid JSON
+      }
+    }, 100);
   };
 
   return (
@@ -278,14 +340,46 @@ const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
               {diffResults.length !== 1 ? "s" : ""} found
             </div>
           )}
-          <Button className="flex items-center gap-2" onClick={swapJsons}>
+          <Button variant="default" className="flex items-center gap-2" onClick={swapJsons}>
             <ArrowLeftRight className="w-4 h-4" />
             Swap
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Mobile View Selector */}
+      <div className="lg:hidden flex justify-center mb-4">
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setCurrentView('left')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              currentView === 'left'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Left JSON
+          </button>
+          <button
+            onClick={() => setCurrentView('right')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              currentView === 'right'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Right JSON
+          </button>
+        </div>
+      </div>
+
+      {/* Swipe Instructions for Mobile */}
+      <div className="lg:hidden text-center text-sm text-gray-500 mb-4">
+        👆 Tap to switch or swipe left/right to navigate between editors
+      </div>
+
+      {/* Desktop Layout */}
+      <div className="hidden lg:grid lg:grid-cols-2 gap-6">
         <div data-testid="left-editor">
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-gray-700">
@@ -319,6 +413,88 @@ const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
         </div>
 
         <div data-testid="right-editor">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-gray-700">
+              Right JSON
+            </label>
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-xs px-2 py-1 rounded ${
+                  rightValid
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {rightValid ? "Valid" : "Invalid"}
+              </span>
+              {rightHighlights.length > 0 && (
+                <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                  {rightHighlights.length} line
+                  {rightHighlights.length !== 1 ? "s" : ""} highlighted
+                </span>
+              )}
+            </div>
+          </div>
+          <JsonEditor
+            value={rightJson}
+            onChange={handleRightChange}
+            height="500px"
+            onValidationStatusChange={({ valid }) => setRightValid(valid)}
+            diffHighlights={rightHighlights}
+          />
+        </div>
+      </div>
+
+      {/* Mobile Layout with Swipe */}
+      <div 
+        className="lg:hidden relative overflow-hidden"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        <div 
+          className={`transition-transform duration-300 ease-in-out ${
+            currentView === 'left' ? 'translate-x-0' : '-translate-x-full'
+          }`}
+          data-testid="left-editor-mobile"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-gray-700">
+              Left JSON
+            </label>
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-xs px-2 py-1 rounded ${
+                  leftValid
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {leftValid ? "Valid" : "Invalid"}
+              </span>
+              {leftHighlights.length > 0 && (
+                <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                  {leftHighlights.length} line
+                  {leftHighlights.length !== 1 ? "s" : ""} highlighted
+                </span>
+              )}
+            </div>
+          </div>
+          <JsonEditor
+            value={leftJson}
+            onChange={handleLeftChange}
+            height="500px"
+            onValidationStatusChange={({ valid }) => setLeftValid(valid)}
+            diffHighlights={leftHighlights}
+          />
+        </div>
+
+        <div 
+          className={`absolute top-0 left-0 w-full transition-transform duration-300 ease-in-out ${
+            currentView === 'right' ? 'translate-x-0' : 'translate-x-full'
+          }`}
+          data-testid="right-editor-mobile"
+        >
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-gray-700">
               Right JSON
