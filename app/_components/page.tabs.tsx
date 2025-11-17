@@ -27,13 +27,13 @@ type TabPageProps = {
 const PageTabs = ({ tabs, activeTab, setActiveTab, children, pageTabs, setPageTabs }: TabPageProps) => {
   return (
     <Tabs defaultValue={activeTab.id} className="w-full">
-      <TabsList className="flex gap-2">
+      <TabsList className="flex gap-2 bg-slate-200">
         {tabs.map((tab) => (
           <TabsTrigger key={tab.id} value={tab.id} onClick={() => setActiveTab(tab)}>
             {tab.label}
           </TabsTrigger>
         ))}
-        <Button onClick={() => (pageTabs.length < 10) ? setPageTabs([...pageTabs, { id: (pageTabs.length + 1).toString(), label: `Tab ${pageTabs.length + 1}` }]) : toast.error('Work with what you have! No more tabs allowed')} size='sm'>
+        <Button className='h-[29px]' onClick={() => (pageTabs.length < 10) ? setPageTabs([...pageTabs, { id: (pageTabs.length + 1).toString(), label: `Tab ${pageTabs.length + 1}` }]) : toast.error('Work with what you have! No more tabs allowed')} size='sm'>
             <Plus />
         </Button>
       </TabsList>

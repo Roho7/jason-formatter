@@ -25,11 +25,11 @@ export default function Home() {
   }, [pageTabs]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <header className="text-right mb-2 px-4 absolute right-2 top-2">
-          <h1 className="text-3xl font-semibold mb-2 inset-shadow">
-            JASON Formatter
-          </h1>
+    <div className="min-h-screen bg-gray-100">
+        <header className="px-4 top-2 flex items-center justify-center bg-[radial-gradient(circle_at_center,10)] from-blue-500 to-purple-500">
+          {/* <h1 className="lg:text-2xl text-2xl  font-semibold mb-2 tracking-widest inset-shadow bg-gradient-to-br from-gray-500 to-gray-800 bg-clip-text text-transparent">
+            JSON TOOLS
+          </h1> */}
         </header>
       <div className="w-full px-2 py-2">
 

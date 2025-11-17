@@ -45,9 +45,12 @@ const JsonFormatter = ({
     error: null,
   });
   const [copySuccess, setCopySuccess] = useState(false);
+  const [currentView, setCurrentView] = useState<'input' | 'output'>('input');
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   const tabs = [
-    { id: "format", label: "Format & Prettify", icon: "🎨" },
+    { id: "format", label: "Prettify", icon: "🎨" },
     { id: "minify", label: "Minify", icon: "📦" },
     { id: "diff", label: "Compare", icon: "🔍" },
   ];
@@ -184,10 +187,37 @@ const JsonFormatter = ({
     }
   };
 
+  // Swipe detection for mobile
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentView === 'input') {
+      setCurrentView('output');
+    }
+    if (isRightSwipe && currentView === 'output') {
+      setCurrentView('input');
+    }
+  };
+
   return (
     <div className="space-y-4 flex flex-col h-full">
       {/* Tab Navigation */}
-      <div className="flex flex-wrap gap-2 pb-8 border-b border-muted-foreground">
+      <div className="flex flex-wrap gap-2 pb-4 border-b border-muted">
         {tabs.map((tab) => (
           <Button
             key={tab.id}
@@ -216,7 +246,39 @@ const JsonFormatter = ({
         <JsonDiff pageTab={{ id, label }} />
       ) : (
         <>
-          <div className="flex gap-4">
+          {/* Mobile View Selector */}
+          <div className="lg:hidden flex justify-center mb-4">
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setCurrentView('input')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  currentView === 'input'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Input JSON
+              </button>
+              <button
+                onClick={() => setCurrentView('output')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  currentView === 'output'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {activeTab === "format" ? "Formatted" : "Minified"}
+              </button>
+            </div>
+          </div>
+
+          {/* Swipe Instructions for Mobile */}
+          <div className="lg:hidden text-center text-sm text-gray-500 mb-4">
+            👆 Tap to switch or swipe left/right to navigate between editors
+          </div>
+
+          {/* Desktop Headers */}
+          <div className="hidden lg:flex gap-4">
             <div className="flex-1 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-800">
                 Input JSON
@@ -278,8 +340,8 @@ const JsonFormatter = ({
             </div>
           </div>
 
-          {/* Main Content - Side by Side */}
-          <div className="flex gap-4 flex-1 min-h-0">
+          {/* Desktop Layout - Side by Side */}
+          <div className="hidden lg:flex gap-4 flex-1 min-h-0">
             {/* Input JSON Editor */}
             <div className="flex-1">
               <JsonEditor
@@ -303,6 +365,104 @@ const JsonFormatter = ({
                 />
               ) : (
                 <div className="h-full bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center">
+                  <span className="text-gray-500">
+                    {activeTab === "format"
+                      ? "Formatted JSON will appear here"
+                      : "Minified JSON will appear here"}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile Layout with Swipe */}
+          <div 
+            className="lg:hidden relative overflow-hidden"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
+            {/* Input View */}
+            <div 
+              className={`transition-transform duration-300 ease-in-out ${
+                currentView === 'input' ? 'translate-x-0' : '-translate-x-full'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Input JSON
+                </h3>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={processJson}
+                    disabled={!validationResult.valid}
+                    size="sm"
+                  >
+                    {activeTab === "format" ? "Format" : "Minify"}
+                  </Button>
+                  <Button
+                    onClick={saveCurrentJson}
+                    variant="outline"
+                    size="sm"
+                    disabled={!validationResult.valid}
+                  >
+                    <History className="w-4 h-4" />
+                  </Button>
+                  <label className="flex items-center text-sm gap-2 px-2 py-1 h-9 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                    <Upload className="w-3 h-3" />
+                    <Input
+                      type="file"
+                      accept=".json"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+              <JsonEditor
+                value={inputJson}
+                onChange={handleInputChange}
+                height="500px"
+                onValidationStatusChange={(status: any) =>
+                  setValidationResult(status)
+                }
+              />
+            </div>
+
+            {/* Output View */}
+            <div 
+              className={`absolute top-0 left-0 w-full transition-transform duration-300 ease-in-out ${
+                currentView === 'output' ? 'translate-x-0' : 'translate-x-full'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  {activeTab === "format" ? "Formatted JSON" : "Minified JSON"}
+                </h3>
+                {outputJson && (
+                  <div className="flex items-center gap-2">
+                    <Button onClick={handleCopy} size="sm">
+                      {copySuccess ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button onClick={handleDownload} size="sm">
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {outputJson ? (
+                <JsonEditor
+                  value={outputJson}
+                  readOnly={true}
+                  height="500px"
+                  onChange={() => {}}
+                />
+              ) : (
+                <div className="h-[500px] bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center">
                   <span className="text-gray-500">
                     {activeTab === "format"
                       ? "Formatted JSON will appear here"

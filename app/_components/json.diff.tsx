@@ -332,7 +332,7 @@ const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-800">JSON Comparison</h3>
+        <h3 className="text-lg font-semibold text-gray-800">JSON Diff</h3>
         <div className="flex items-center gap-4">
           {diffResults && diffResults.length > 0 && (
             <div className="text-sm text-gray-600">
@@ -374,8 +374,8 @@ const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
       </div>
 
       {/* Swipe Instructions for Mobile */}
-      <div className="lg:hidden text-center text-sm text-gray-500 mb-4">
-        👆 Tap to switch or swipe left/right to navigate between editors
+      <div className="lg:hidden text-center text-xs text-gray-500 mb-4">
+        👆 Tap to switch or swipe left/right to navigate
       </div>
 
       {/* Desktop Layout */}
