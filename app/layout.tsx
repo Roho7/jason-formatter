@@ -30,7 +30,7 @@ export default function RootLayout({
       <body className={`${figTree.variable} ${geistMono.variable} antialiased`}>
         {children}
         <Script src="https://storage.ko-fi.com/cdn/scripts/overlay-widget.js" strategy="beforeInteractive"></Script>
-        <Script>
+        <Script id="ko-fi-widget">
           {`kofiWidgetOverlay.draw('roho', {
     'type': 'floating-chat',
     'floating-chat.donateButton.text': 'Support me',

@@ -16,7 +16,7 @@ export type RenameModalRef = {
   open: () => void;
 };
 
-export const RenameModal = forwardRef<
+const RenameModal = forwardRef<
   RenameModalRef,
   { onSave: (name: string) => void }
 >(({ onSave }, ref) => {
@@ -71,3 +71,7 @@ export const RenameModal = forwardRef<
     </Dialog>
   );
 });
+
+
+RenameModal.displayName = "RenameModal";
+export { RenameModal };
