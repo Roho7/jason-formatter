@@ -291,6 +291,77 @@ const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
     setRightJson(temp);
   };
 
+  const exportDifferencesToCSV = () => {
+    if (!diffResults || diffResults.length === 0) {
+      alert("No differences to export");
+      return;
+    }
+
+    // CSV Header
+    const headers = ["line_number", "left_key", "right_key", "left_value", "right_value"];
+    
+    // Convert differences to CSV rows
+    const rows = diffResults.map((diff) => {
+      let lineNumber = "";
+      let leftKey = "";
+      let rightKey = "";
+      let leftValue = "";
+      let rightValue = "";
+
+      if (diff.type === "modified") {
+        // For modified entries, we have both left and right
+        lineNumber = diff.leftLine?.toString() || diff.rightLine?.toString() || "";
+        leftKey = diff.key;
+        rightKey = diff.key;
+        leftValue = JSON.stringify(diff.oldValue);
+        rightValue = JSON.stringify(diff.newValue);
+      } else if (diff.type === "removed") {
+        // For removed entries, only left side has data
+        lineNumber = diff.line?.toString() || "";
+        leftKey = diff.key;
+        rightKey = "";
+        leftValue = JSON.stringify(diff.value);
+        rightValue = "";
+      } else if (diff.type === "added") {
+        // For added entries, only right side has data
+        lineNumber = diff.line?.toString() || "";
+        leftKey = "";
+        rightKey = diff.key;
+        leftValue = "";
+        rightValue = JSON.stringify(diff.value);
+      }
+
+      // Escape and format values for CSV
+      const escapeCsvValue = (value: string) => {
+        if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      };
+
+      return [
+        lineNumber,
+        escapeCsvValue(leftKey),
+        escapeCsvValue(rightKey),
+        escapeCsvValue(leftValue),
+        escapeCsvValue(rightValue),
+      ].join(",");
+    });    // Combine headers and 
+    const csvContent = [headers.join(","), ...rows].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `json-diff-${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = "hidden";
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }; 
+
   const handleLeftChange = (value: string) => {
     setLeftJson(value);
     
@@ -331,22 +402,6 @@ const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-800">JSON Diff</h3>
-        <div className="flex items-center gap-4">
-          {diffResults && diffResults.length > 0 && (
-            <div className="text-sm text-gray-600">
-              {diffResults.length} difference
-              {diffResults.length !== 1 ? "s" : ""} found
-            </div>
-          )}
-          <Button variant="default" className="flex items-center gap-2" onClick={swapJsons}>
-            <ArrowLeftRight className="w-4 h-4" />
-            Swap
-          </Button>
-        </div>
-      </div>
-
       {/* Mobile View Selector */}
       <div className="lg:hidden flex justify-center mb-4">
         <div className="flex bg-gray-100 rounded-lg p-1">
@@ -377,6 +432,23 @@ const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
       <div className="lg:hidden text-center text-xs text-gray-500 mb-4">
         👆 Tap to switch or swipe left/right to navigate
       </div>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-800">JSON Diff</h3>
+        <div className="flex items-center gap-4">
+          {diffResults && diffResults.length > 0 && (
+            <div className="text-sm text-gray-600">
+              {diffResults.length} difference
+              {diffResults.length !== 1 ? "s" : ""} found
+            </div>
+          )}
+          <Button variant="default" className="flex items-center gap-2" onClick={swapJsons}>
+            <ArrowLeftRight className="w-4 h-4" />
+            Swap
+          </Button>
+        </div>
+      </div>
+
+      
 
       {/* Desktop Layout */}
       <div className="hidden lg:grid lg:grid-cols-2 gap-6">
@@ -537,9 +609,15 @@ const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
       {/* Detailed Differences Summary */}
       {diffResults && (
         <div className="bg-gray-50 rounded-lg p-4">
-          <h4 className="font-semibold mb-3 text-gray-800">
-            Differences Found:
-          </h4>
+          <div className="flex justify-between items-center mb-3">
+            <h4 className="font-semibold text-gray-800">
+              Differences Found:
+            </h4>
+            <Button variant="default" className="flex items-center gap-2" onClick={exportDifferencesToCSV}>
+              <Download className="w-4 h-4" />
+              Export CSV
+            </Button>
+          </div>
           {diffResults.length === 0 ? (
             <p className="text-green-600">
               No differences found - JSONs are identical!

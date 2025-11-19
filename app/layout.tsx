@@ -1,6 +1,8 @@
+
 import type { Metadata } from "next";
-import { Figtree , Geist, Geist_Mono } from "next/font/google";
+import { Figtree, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Script from "next/script";
 
 const figTree = Figtree({
   variable: "--font-figtree",
@@ -24,10 +26,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${figTree.variable} ${geistMono.variable} antialiased`}
-      >
+      <head></head>
+      <body className={`${figTree.variable} ${geistMono.variable} antialiased`}>
         {children}
+        <Script src="https://storage.ko-fi.com/cdn/scripts/overlay-widget.js" strategy="beforeInteractive"></Script>
+        <Script>
+          {`kofiWidgetOverlay.draw('roho', {
+    'type': 'floating-chat',
+    'floating-chat.donateButton.text': 'Support me',
+    'floating-chat.donateButton.background-color': '#ffffff',
+    'floating-chat.donateButton.text-color': '#323842'
+  });`}
+        </Script>
       </body>
     </html>
   );

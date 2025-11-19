@@ -3,49 +3,109 @@ import React, { useEffect, useState } from "react";
 import JsonFormatter from "./_components/json.formatter";
 import PageTabs from "./_components/page.tabs";
 import { getTabs, JsonEntry, saveTabs } from "./_utils/utils";
-import { Toaster } from "sonner";
+import { toast, Toaster } from "sonner";
+
+import { HotkeysProvider, useHotkeys } from "react-hotkeys-hook";
 
 export default function Home() {
-  const [pageTabs, setPageTabs] = useState<{ id: string; label: string }[]>([
-    { id: '1', label: 'Tab 1' }
-  ]);
-  const [activePageTab, setActivePageTab] = useState<{ id: string; label: string }>({
-    id: '1', label: 'Tab 1'
-  });
-  const [activeTab, setActiveTab] = useState<JsonEntry['type']>("format");
+  const [pageTabs, setPageTabs] = useState<{ id: string; label: string }[]>([]);
+  const [activeTabId, setActiveTabId] = useState<string | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<JsonEntry["type"]>("format");
 
   useEffect(() => {
     const storedTabs = getTabs();
-    setPageTabs(storedTabs);
-    setActivePageTab(storedTabs[0]);
+    if (storedTabs.length === 0) {
+      const newTabId = Date.now().toString();
+      setPageTabs([{ id: newTabId, label: `Tab ${pageTabs.length + 1}` }]);
+      setActiveTabId(newTabId);
+    } else {
+      setPageTabs(storedTabs);
+      setActiveTabId(storedTabs[0].id);
+    }
   }, []);
 
-  useEffect(() => {
+  const handleCloseTab = (tab_id: string) => {
+    setPageTabs(pageTabs.filter((t) => t.id !== tab_id));
+
     saveTabs(pageTabs);
-  }, [pageTabs]);
+
+  };
+
+  const handleOpenTab = () => {
+
+    const newTabId = Date.now().toString();
+    pageTabs.length < 10
+      ? setPageTabs([
+          ...pageTabs,
+          {
+            id: newTabId,
+            label: `Tab ${pageTabs.length + 1}`,
+          },
+        ])
+      : toast.error("Work with what you have! No more tabs allowed");
+
+    saveTabs(pageTabs);
+    setActiveTabId(newTabId);
+  };
+
+  useHotkeys("mod+esc", () => {
+    const activeTabIndex = pageTabs?.findIndex((t) => t.id === activeTabId);
+    handleCloseTab(pageTabs[activeTabIndex].id);
+    if (activeTabIndex && activeTabIndex > 0) {
+      setActiveTabId(pageTabs[activeTabIndex - 1].id);
+    } else {
+      setActiveTabId(pageTabs[0].id);
+    }
+  });
+
+  useHotkeys("alt+shift+n", () => {
+    handleOpenTab();
+  });
+
+  useHotkeys("alt+shift+right", () => {
+    const activeTabIndex = pageTabs?.findIndex((t) => t.id === activeTabId);
+    if (activeTab && activeTabIndex < pageTabs.length - 1) {
+      setActiveTabId(pageTabs[activeTabIndex + 1].id);
+    } else {
+      setActiveTabId(pageTabs[0].id);
+    }
+  });
+  useHotkeys("alt+shift+left", () => {
+    const activeTabIndex = pageTabs?.findIndex((t) => t.id === activeTabId);
+    if (activeTab && activeTabIndex > 0) {
+      setActiveTabId(pageTabs[activeTabIndex - 1].id);
+    } else {
+      setActiveTabId(pageTabs[pageTabs.length - 1].id);
+    }
+  });
+
 
   return (
+    <HotkeysProvider>
     <div className="min-h-screen bg-gray-100">
-        <header className="px-4 top-2 flex items-center justify-center bg-[radial-gradient(circle_at_center,10)] from-blue-500 to-purple-500">
-          {/* <h1 className="lg:text-2xl text-2xl  font-semibold mb-2 tracking-widest inset-shadow bg-gradient-to-br from-gray-500 to-gray-800 bg-clip-text text-transparent">
-            JSON TOOLS
-          </h1> */}
-        </header>
+      <header className="px-4 top-2 flex items-center justify-center bg-[radial-gradient(circle_at_center,10)] from-blue-500 to-purple-500">
+      </header>
       <div className="w-full px-2 py-2">
-
         <PageTabs
-          tabs={pageTabs}
-          activeTab={activePageTab}
-          setActiveTab={setActivePageTab}
+          handleCloseTab={handleCloseTab}
+          handleOpenTab={handleOpenTab}
+          activeTabId={activeTabId}
+          setActiveTabId={setActiveTabId}
           pageTabs={pageTabs}
           setPageTabs={setPageTabs}
         >
           <div className="bg-white rounded-2xl shadow-xl px-8 py-4 ">
-            <JsonFormatter id={activePageTab.id} label={activePageTab.label} activeTab={activeTab} setActiveTab={setActiveTab} />
+            <JsonFormatter
+              id={activeTabId}
+              label={pageTabs.find((t) => t.id === activeTabId)?.label || ""}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
           </div>
         </PageTabs>
       </div>
       <Toaster />
     </div>
+    </HotkeysProvider>
   );
 }

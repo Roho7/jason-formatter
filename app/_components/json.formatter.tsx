@@ -21,6 +21,31 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useHotkeys } from "react-hotkeys-hook";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
+
+const tips = [
+  {
+    id: 'auto-save',
+    body: <div className="text-xs text-gray-500 text-center">
+    💡 Tip: Press{" "}
+    <Kbd>Cmd/Ctrl</Kbd> +{" "}
+    <Kbd>V</Kbd> to
+    auto-save pasted JSON to history
+  </div>
+  },
+  {
+    id: 'switch-tabs',
+    body: <div className="text-xs text-gray-500 text-center">
+            💡 Tip: Press{" "}
+            <Kbd >Alt/Option</Kbd> +{" "}
+            <Kbd >⇧</Kbd> +{" "}
+            <Kbd >→ / ←</Kbd> to
+            switch tabs
+  </div>
+  }
+]
 
 const JsonFormatter = ({
   id,
@@ -28,7 +53,7 @@ const JsonFormatter = ({
   activeTab,
   setActiveTab,
 }: {
-  id: string;
+  id?: string;
   label: string;
   activeTab: JsonEntry["type"];
   setActiveTab: (tab: JsonEntry["type"]) => void;
@@ -50,14 +75,14 @@ const JsonFormatter = ({
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   const tabs = [
-    { id: "format", label: "Prettify", icon: "🎨" },
-    { id: "minify", label: "Minify", icon: "📦" },
-    { id: "diff", label: "Compare", icon: "🔍" },
+    { id: "format", label: "Prettify", icon: "🎨", shortcut: ['alt', '⇧', 'p'] },
+    { id: "minify", label: "Minify", icon: "📦", shortcut: ['alt', '⇧', 'm'] },
+    { id: "diff", label: "Compare", icon: "🔍", shortcut: ['alt', '⇧', 'c'] },
   ];
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const latestEntry = getLatestJsonEntry("format", id);
+      const latestEntry = getLatestJsonEntry("format", id || "");
       if (latestEntry && latestEntry.content.trim()) {
         setInputJson(latestEntry.content);
       } else {
@@ -70,7 +95,9 @@ const JsonFormatter = ({
 
   useEffect(() => {
     const handleKeyDown = () => {
-      handlePasteEvent(inputJson, "format", id, () => {});
+      if (id) {
+        handlePasteEvent(inputJson, "format", id, () => {});
+      }
     };
 
     handleKeyDown();
@@ -141,7 +168,7 @@ const JsonFormatter = ({
         if (content.trim()) {
           try {
             JSON.parse(content); // Validate before saving
-            saveJsonEntry(content, "format", id, `Uploaded: ${file.name}`);
+            saveJsonEntry(content, "format", id || "", `Uploaded: ${file.name}`);
           } catch (error) {
             // Don't save invalid JSON
           }
@@ -177,7 +204,7 @@ const JsonFormatter = ({
         const validation = validateJson({ jsonString: inputJson });
         if (validation.valid) {
           const parsed = JSON.parse(inputJson);
-          saveJsonEntry(inputJson, activeTab as JsonEntry["type"], id);
+          saveJsonEntry(inputJson, activeTab as JsonEntry["type"], id || "");
           toast.success("Saved to history!");
         }
       } catch (error) {
@@ -214,24 +241,46 @@ const JsonFormatter = ({
     }
   };
 
+
+  useHotkeys("alt+shift+p", () => {
+    handleTabChange("format")
+  });
+  useHotkeys("alt+shift+m", () => {
+    handleTabChange("minify")
+  });
+  useHotkeys("alt+shift+c", () => {
+    handleTabChange("diff" as JsonEntry["type"])
+  });
+
   return (
     <div className="space-y-4 flex flex-col h-full">
       {/* Tab Navigation */}
-      <div className="flex flex-wrap gap-2 pb-4 border-b border-muted">
-        {tabs.map((tab) => (
-          <Button
-            key={tab.id}
-            onClick={() => handleTabChange(tab.id as JsonEntry["type"])}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === tab.id
-                ? "bg-primary text-white"
-                : "bg-accent text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            <span>{tab.icon}</span>
-            {tab.label}
-          </Button>
-        ))}
+      <div className="flex justify-between pb-4 border-b border-muted items-center">
+        <div className="flex flex-wrap gap-2 ">
+          {tabs.map((tab) => (
+            <Tooltip key={tab.id}>
+              <TooltipTrigger asChild>
+              <Button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id as JsonEntry["type"])}
+                active={activeTab === tab.id}
+              >
+                <span>{tab.icon}</span>
+                {tab.label}
+              </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <KbdGroup>
+                  {tab.shortcut.map((shortcut, index) => (
+                    <><Kbd key={shortcut}>{shortcut}</Kbd>{index < tab.shortcut.length - 1 && <span>+</span>}</>
+                  ))}
+                </KbdGroup>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+
+        <h1 className="hidden sm:block text-xl text-gray-200 shdow-inner whitespace-nowrap">{activeTab === "format" ? "JASON THE BEAUTIFUL" : activeTab === "minify" ? "JASON SHORT" : "STATHAM VS DERULO"}</h1>
       </div>
 
       {/* Error Message */}
@@ -243,7 +292,7 @@ const JsonFormatter = ({
       )}
 
       {activeTab.startsWith("diff") ? (
-        <JsonDiff pageTab={{ id, label }} />
+        <JsonDiff pageTab={{ id: id || "", label }} />
       ) : (
         <>
           {/* Mobile View Selector */}
@@ -474,11 +523,7 @@ const JsonFormatter = ({
           </div>
 
           {/* Auto-save notice */}
-          <div className="text-xs text-gray-500 text-center">
-            💡 Tip: Press{" "}
-            <kbd className="px-1 py-0.5 bg-gray-200 rounded">Cmd/Ctrl+V</kbd> to
-            auto-save pasted JSON to history
-          </div>
+          {tips[Math.floor(Math.random() * tips.length)].body}
         </>
       )}
     </div>
