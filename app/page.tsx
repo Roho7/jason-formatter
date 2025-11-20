@@ -4,7 +4,6 @@ import JsonFormatter from "./_components/json.formatter";
 import PageTabs from "./_components/page.tabs";
 import { getTabs, JsonEntry, saveTabs } from "./_utils/utils";
 import { toast, Toaster } from "sonner";
-
 import { HotkeysProvider, useHotkeys } from "react-hotkeys-hook";
 
 export default function Home() {
@@ -82,9 +81,7 @@ export default function Home() {
 
   return (
     <HotkeysProvider>
-    <div className="min-h-screen bg-gray-100">
-      <header className="px-4 top-2 flex items-center justify-center bg-[radial-gradient(circle_at_center,10)] from-blue-500 to-purple-500">
-      </header>
+    <div className="min-h-screen bg-background">
       <div className="w-full px-2 py-2">
         <PageTabs
           handleCloseTab={handleCloseTab}
@@ -94,10 +91,9 @@ export default function Home() {
           pageTabs={pageTabs}
           setPageTabs={setPageTabs}
         >
-          <div className="bg-white rounded-2xl shadow-xl px-8 py-4 ">
+          <div className="bg-card rounded-2xl shadow-xl px-8 py-4 ">
             <JsonFormatter
-              id={activeTabId}
-              label={pageTabs.find((t) => t.id === activeTabId)?.label || ""}
+              tab_id={activeTabId}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
             />

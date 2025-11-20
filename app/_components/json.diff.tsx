@@ -31,7 +31,7 @@ interface DiffResult {
   rightLineContent?: string;
 }
 
-const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
+const JsonDiff = ({ tab_id }: { tab_id: string }) => {
   const [leftJson, setLeftJson] = useState("");
   const [rightJson, setRightJson] = useState("");
   const [leftValid, setLeftValid] = useState(true);
@@ -42,8 +42,8 @@ const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
 
   // Load the latest JSON entries on component mount
   useEffect(() => {
-    const latestLeftEntry = getLatestJsonEntry("diff-left", pageTab.id);
-    const latestRightEntry = getLatestJsonEntry("diff-right", pageTab.id);
+    const latestLeftEntry = getLatestJsonEntry("diff-left", tab_id);
+    const latestRightEntry = getLatestJsonEntry("diff-right", tab_id);
 
     if (latestLeftEntry && latestLeftEntry.content.trim()) {
       setLeftJson(latestLeftEntry.content);
@@ -58,7 +58,7 @@ const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
       // Default right JSON if no history exists
       setRightJson('{\n  "firstName": "Jason",\n  "lastName": "Statham"\n}');
     }
-  }, []);
+  }, [tab_id]);
 
   // Add keyboard event listeners for paste detection
   useEffect(() => {
@@ -71,9 +71,9 @@ const JsonDiff = ({ pageTab }: { pageTab: { id: string; label: string } }) => {
       );
 
       if (leftEditor && leftEditor.contains(activeElement)) {
-        handlePasteEvent(leftJson, "diff-left", pageTab.id, () => {});
+        handlePasteEvent(leftJson, "diff-left", tab_id, () => {});
       } else if (rightEditor && rightEditor.contains(activeElement)) {
-        handlePasteEvent(rightJson, "diff-right", pageTab.id, () => {});
+        handlePasteEvent(rightJson, "diff-right", tab_id, () => {});
       }
     };
 

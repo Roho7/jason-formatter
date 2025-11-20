@@ -48,13 +48,11 @@ const tips = [
 ]
 
 const JsonFormatter = ({
-  id,
-  label,
+  tab_id,
   activeTab,
   setActiveTab,
 }: {
-  id?: string;
-  label: string;
+  tab_id?: string;
   activeTab: JsonEntry["type"];
   setActiveTab: (tab: JsonEntry["type"]) => void;
 }) => {
@@ -82,21 +80,21 @@ const JsonFormatter = ({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const latestEntry = getLatestJsonEntry("format", id || "");
+      const latestEntry = getLatestJsonEntry("format", tab_id || "");
       if (latestEntry && latestEntry.content.trim()) {
         setInputJson(latestEntry.content);
       } else {
         setInputJson(
-          '{\n  "name": "Jason Derulo",\n  "age": 30,\n  "email": "jason@derulo.com",\n  "hobbies": ["😎", "rizz", "gooning"],\n  "address": {\n    "street": "Yo mama house",\n    "city": "New York",\n    "zipCode": "80085"\n  }\n}',
+          '{\n  "name": "Jason Derulo",\n  "age": 30,\n  "email": "jason@derulo.com",\n  "hobbies": ["😎", "🫡", "🫠"],\n  "address": {\n    "street": "Florida Keys",\n    "city": "Miami",\n    "zipCode": "33139"\n  }\n}',
         );
       }
     }
-  }, [id]);
+  }, [tab_id]);
 
   useEffect(() => {
     const handleKeyDown = () => {
-      if (id) {
-        handlePasteEvent(inputJson, "format", id, () => {});
+      if (tab_id) {
+        handlePasteEvent(inputJson, "format", tab_id, () => {});
       }
     };
 
@@ -168,7 +166,7 @@ const JsonFormatter = ({
         if (content.trim()) {
           try {
             JSON.parse(content); // Validate before saving
-            saveJsonEntry(content, "format", id || "", `Uploaded: ${file.name}`);
+            saveJsonEntry(content, "format", tab_id || "", `Uploaded: ${file.name}`);
           } catch (error) {
             // Don't save invalid JSON
           }
@@ -204,7 +202,7 @@ const JsonFormatter = ({
         const validation = validateJson({ jsonString: inputJson });
         if (validation.valid) {
           const parsed = JSON.parse(inputJson);
-          saveJsonEntry(inputJson, activeTab as JsonEntry["type"], id || "");
+          saveJsonEntry(inputJson, activeTab as JsonEntry["type"], tab_id || "");
           toast.success("Saved to history!");
         }
       } catch (error) {
@@ -253,9 +251,9 @@ const JsonFormatter = ({
   });
 
   return (
-    <div className="space-y-4 flex flex-col h-full">
+    <div className="space-y-4 flex flex-col h-full relative">
       {/* Tab Navigation */}
-      <div className="flex justify-between pb-4 border-b border-muted items-center">
+      <div className="flex justify-between pb-4 border-b border-border items-center">
         <div className="flex flex-wrap gap-2 ">
           {tabs.map((tab) => (
             <Tooltip key={tab.id}>
@@ -272,7 +270,7 @@ const JsonFormatter = ({
               <TooltipContent>
                 <KbdGroup>
                   {tab.shortcut.map((shortcut, index) => (
-                    <><Kbd key={shortcut}>{shortcut}</Kbd>{index < tab.shortcut.length - 1 && <span>+</span>}</>
+                    <span key={index}><Kbd key={shortcut}>{shortcut}</Kbd>{index < tab.shortcut.length - 1 && <span>+</span>}</span>
                   ))}
                 </KbdGroup>
               </TooltipContent>
@@ -292,7 +290,7 @@ const JsonFormatter = ({
       )}
 
       {activeTab.startsWith("diff") ? (
-        <JsonDiff pageTab={{ id: id || "", label }} />
+        <JsonDiff tab_id={tab_id || ""} />
       ) : (
         <>
           {/* Mobile View Selector */}
