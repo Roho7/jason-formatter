@@ -57,7 +57,7 @@ export function convertJsonToTsType(inputContent: any, indent = 0): string {
 
     if (typeArray.some((type: string) => type === "object")) {
 
-      let found_keys: Record<string, {type: string, count: number}> = {};
+      const found_keys: Record<string, {type: string, count: number}> = {};
       for (const [index, inputContentItem] of inputContent.entries()) {
         const keys = Object.keys(inputContentItem);
         for (const key of keys) {
@@ -71,6 +71,7 @@ export function convertJsonToTsType(inputContent: any, indent = 0): string {
 
     return "any[]";
   }
+
 
   if (typeOf === "object") {
     const entries = Object.entries(inputContent)
