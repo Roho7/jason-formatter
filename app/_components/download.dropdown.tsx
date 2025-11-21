@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Download } from "lucide-react";
+import { Braces, Download, File, Table } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -59,8 +59,8 @@ const DownloadDropdown = ({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handleDownloadJson}>Download as JSON</DropdownMenuItem>
-        <DropdownMenuItem onClick={handleDownloadCsv}>Download as CSV</DropdownMenuItem>
+        <DropdownMenuItem onClick={handleDownloadJson}><Braces className="w-4 h-4 text-muted-foreground" /> Download as JSON</DropdownMenuItem>
+        <DropdownMenuItem onClick={handleDownloadCsv}><Table className="w-4 h-4 text-muted-foreground" /> Download as CSV</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

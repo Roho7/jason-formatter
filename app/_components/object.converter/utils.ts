@@ -50,11 +50,24 @@ export function convertJsonToTsType(inputContent: any, indent = 0): string {
     if (typeArray.every((type: string) => type === "string")) return "string[]";
     if (typeArray.every((type: string) => type === "number")) return "number[]";
     if (typeArray.every((type: string) => type === "boolean")) return "boolean[]";
-    // if (typeArray.every((type: string) => type === "object")) return "object[]";
     if (typeArray.every((type: string) => type === "array")) return "array[]";
     if (typeArray.every((type: string) => type === "null")) return "null[]";
     if (typeArray.every((type: string) => type === "undefined")) return "undefined[]";
     if (typeArray.every((type: string) => type === "function")) return "function[]";
+
+    if (typeArray.some((type: string) => type === "object")) {
+
+      let found_keys: Record<string, {type: string, count: number}> = {};
+      for (const [index, inputContentItem] of inputContent.entries()) {
+        const keys = Object.keys(inputContentItem);
+        for (const key of keys) {
+          found_keys[key] = {type: convertJsonToTsType(inputContentItem[key], 1), count: (found_keys[key]?.count || 0) + 1};
+        }
+      }
+
+      const entries = Object.entries(found_keys).map(([key, {type, count}]) => `${pad(indent + 1)}${key}${count !== inputContent.length ? '?' : ''}: ${type}`).join(";\n");
+      return `{\n${entries}\n${pad(indent)}}`;
+    }
 
     return "any[]";
   }

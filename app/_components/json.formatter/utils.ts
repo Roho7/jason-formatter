@@ -79,9 +79,11 @@ export const handleFileUpload = (
 export const handleCopy = async (text: string): Promise<boolean> => {
   try {
     await navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard!");
     return true;
   } catch (error: any) {
     console.error("Copy failed:", error);
+    toast.error("Copy failed!");
     return false;
   }
 };

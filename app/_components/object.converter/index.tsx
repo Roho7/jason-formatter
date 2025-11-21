@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import JsonEditor from "../json.editor";
-import { ArrowLeftRight, History, Save } from "lucide-react";
+import { ArrowLeftRight, Copy, History, Save } from "lucide-react";
 import { getLatestJsonEntry, handlePasteEvent } from "../../_utils/utils";
 import { Button } from "@/components/ui/button";
 import DownloadDropdown from "../download.dropdown";
@@ -15,10 +15,11 @@ import {
   convertJsonToTsType,
 } from "./utils";
 import ErrorCallout from "@/components/ui/error-callout";
+import { handleCopy } from "../json.formatter/utils";
 
 const ObjectConverter = ({ tab_id }: { tab_id?: string }) => {
   const [inputContent, setInputContent] = useState(
-    '{\n  name: "Jason Derulo",\n  age: 30,\n  email: "jason@derulo.com"\n}',
+    '{\n  "name": "Jason Derulo",\n  "age": 30,\n  "email": "jason@derulo.com"\n}',
   );
   const [outputContent, setOutputContent] = useState("");
   const [validationResult, setValidationResult] = useState<{
@@ -52,7 +53,6 @@ const ObjectConverter = ({ tab_id }: { tab_id?: string }) => {
   };
 
   const handleConvert = useCallback(() => {
-    // const result = handleConvertType(inputContent, conversionDirection);
     const result = convertJsonToTsType(JSON.parse(inputContent));
     setOutputContent(result);
     setValidationResult({ valid: true, error: null });
@@ -82,6 +82,13 @@ const ObjectConverter = ({ tab_id }: { tab_id?: string }) => {
               <Save className="w-4 h-4" />
               Save
             </Button>
+            <Button
+              onClick={() => handleCopy(inputContent)}
+              size="sm"
+              variant="outline"
+            >
+              <Copy className="w-4 h-4" />
+            </Button>
             <DownloadDropdown content={inputContent} filename="object-input" />
           </div>
         </div>
@@ -90,12 +97,17 @@ const ObjectConverter = ({ tab_id }: { tab_id?: string }) => {
           <h3 className="text-lg font-semibold text-gray-800">
             Typescript Type
           </h3>
+          <div className="flex items-center gap-2">
+          <Button onClick={() => handleCopy(outputContent)} size='sm' variant='outline'>
+            <Copy className="w-4 h-4" />
+          </Button>
           {outputContent && (
             <DownloadDropdown
               content={outputContent}
               filename="converted-output"
             />
           )}
+        </div>
         </div>
       </div>
 

@@ -10,6 +10,7 @@ import { validateJson } from "@/app/_utils/validators";
 import { useSwipeHandlers } from "@/app/_utils/mousefunctions";
 import DownloadDropdown from "../download.dropdown";
 import JsonEditor from "../json.editor";
+import { handleCopy } from "../json.formatter/utils";
 
 interface DiffHighlight {
   lineNumber: number;
@@ -355,6 +356,9 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
                   {leftHighlights.length !== 1 ? "s" : ""} highlighted
                 </span>
               )}
+              <Button onClick={() => handleCopy(leftJson)} size='sm' variant='outline'>
+                <Copy className="w-4 h-4" />
+              </Button>
               <DownloadDropdown content={leftJson} filename="json-diff-left" />
             </div>
           </div>
@@ -388,6 +392,9 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
                   {rightHighlights.length !== 1 ? "s" : ""} highlighted
                 </span>
               )}
+              <Button onClick={() => handleCopy(rightJson)} size='sm' variant='outline'>
+                <Copy className="w-4 h-4" />
+              </Button>
               <DownloadDropdown content={rightJson} filename="json-diff-right" />
             </div>
           </div>

@@ -9,7 +9,7 @@ type Props = {
 
 const ErrorCallout = ({ validationResult }: Props) => {
   return validationResult.valid ? null : (
-    <div className="flex items-center gap-2 p-3 bg-red-800/20 border border-red-200 backdrop-blur-xl rounded-lg absolute bottom-10 right-1/2 translate-x-1/2 z-[999]">
+    <div className="flex items-center gap-2 p-3 bg-red-700/50 backdrop-blur-xl rounded-lg absolute bottom-10 right-1/2 translate-x-1/2 z-[999] mix-blend-hard-light">
       <span className="text-red-200 font-medium text-sm">{validationResult.error || "Invalid JSON"}</span>
     </div>
   );

@@ -6,11 +6,19 @@ import JsonDiff from "../json-diff";
 import ObjectConverter from "../object.converter";
 import DownloadDropdown from "../download.dropdown";
 import { Copy, Check, AlertCircle, History, Upload, Code } from "lucide-react";
-import { getLatestJsonEntry, handlePasteEvent, JsonEntry } from "../../_utils/utils";
+import {
+  getLatestJsonEntry,
+  handlePasteEvent,
+  JsonEntry,
+} from "../../_utils/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useHotkeys } from "react-hotkeys-hook";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { validateJson } from "../../_utils/validators";
 import { useSwipeHandlers } from "../../_utils/mousefunctions";
@@ -29,7 +37,8 @@ const tips = [
     id: "auto-save",
     body: (
       <div className="text-xs text-gray-500 text-center">
-        💡 Tip: Press <Kbd>Cmd/Ctrl</Kbd> + <Kbd>V</Kbd> to auto-save pasted JSON to history
+        💡 Tip: Press <Kbd>Cmd/Ctrl</Kbd> + <Kbd>V</Kbd> to auto-save pasted
+        JSON to history
       </div>
     ),
   },
@@ -37,7 +46,8 @@ const tips = [
     id: "switch-tabs",
     body: (
       <div className="text-xs text-gray-500 text-center">
-        💡 Tip: Press <Kbd>Alt/Option</Kbd> + <Kbd>⇧</Kbd> + <Kbd>→ / ←</Kbd> to switch tabs
+        💡 Tip: Press <Kbd>Alt/Option</Kbd> + <Kbd>⇧</Kbd> + <Kbd>→ / ←</Kbd> to
+        switch tabs
       </div>
     ),
   },
@@ -63,14 +73,23 @@ const JsonFormatter = ({
     valid: true,
     error: null,
   });
-  const [copySuccess, setCopySuccess] = useState(false);
   const [currentView, setCurrentView] = useState<"input" | "output">("input");
 
   const tabs = [
-    { id: "format", label: "Prettify", icon: "🎨", shortcut: ["alt", "⇧", "p"] },
+    {
+      id: "format",
+      label: "Prettify",
+      icon: "🎨",
+      shortcut: ["alt", "⇧", "p"],
+    },
     { id: "minify", label: "Minify", icon: "📦", shortcut: ["alt", "⇧", "m"] },
     { id: "diff", label: "Compare", icon: "🔍", shortcut: ["alt", "⇧", "c"] },
-    { id: "object-convert", label: "JSON to Type", icon: <BiLogoTypescript className="text-[#007acc] w-6 h-6"/>, shortcut: ["alt", "⇧", "o"] },
+    {
+      id: "object-convert",
+      label: "JSON to Type",
+      icon: <BiLogoTypescript className="text-[#007acc] w-6 h-6" />,
+      shortcut: ["alt", "⇧", "o"],
+    },
   ];
 
   useEffect(() => {
@@ -114,13 +133,7 @@ const JsonFormatter = ({
     saveJson(inputJson, activeTab, tab_id || "");
   }, [inputJson, activeTab, tab_id]);
 
-  const handleCopy = async () => {
-    const success = await handleCopyUtil(outputJson);
-    if (success) {
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    }
-  };
+  const handleCopy = async () => await handleCopyUtil(outputJson);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     handleFileUploadUtil(event, setInputJson, tab_id || "");
@@ -142,14 +155,16 @@ const JsonFormatter = ({
   useHotkeys("alt+shift+p", () => handleTabChange("format"));
   useHotkeys("alt+shift+m", () => handleTabChange("minify"));
   useHotkeys("alt+shift+c", () => handleTabChange("diff" as JsonEntry["type"]));
-  useHotkeys("alt+shift+o", () => handleTabChange("object-convert" as JsonEntry["type"]));
+  useHotkeys("alt+shift+o", () =>
+    handleTabChange("object-convert" as JsonEntry["type"]),
+  );
   useHotkeys("cmd+enter", () => processJson());
 
   const getTitle = () => {
     if (activeTab === "format") return "JASON THE BEAUTIFUL";
     if (activeTab === "minify") return "JASON SHORT";
     if (activeTab.startsWith("diff")) return "STATHAM VS DERULO";
-    return "OBJECT ↔ JSON CONVERTER";
+    return "JASON TYPE SHI";
   };
 
   return (
@@ -224,9 +239,14 @@ const JsonFormatter = ({
 
           <div className="hidden lg:flex gap-4">
             <div className="flex-1 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-800">Input JSON</h3>
+              <h3 className="text-lg font-semibold text-gray-800">
+                Input JSON
+              </h3>
               <div className="flex gap-2">
-                <Button onClick={processJson} disabled={!validationResult.valid}>
+                <Button
+                  onClick={processJson}
+                  disabled={!validationResult.valid}
+                >
                   {activeTab === "format" && "Format JSON"}
                   {activeTab === "minify" && "Minify JSON"}
                 </Button>
@@ -259,11 +279,13 @@ const JsonFormatter = ({
               </h3>
               {outputJson && (
                 <div className="flex items-center gap-2">
-                  <Button onClick={handleCopy}>
-                    {copySuccess ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    {copySuccess ? "Copied!" : "Copy"}
+                  <Button onClick={handleCopy} size="sm" variant="outline">
+                    <Copy className="w-4 h-4" />
                   </Button>
-                  <DownloadDropdown content={outputJson} filename="json-output" />
+                  <DownloadDropdown
+                    content={outputJson}
+                    filename="json-output"
+                  />
                 </div>
               )}
             </div>
@@ -281,7 +303,12 @@ const JsonFormatter = ({
 
             <div className="flex-1">
               {outputJson ? (
-                <JsonEditor value={outputJson} readOnly={true} height="75vh" onChange={() => {}} />
+                <JsonEditor
+                  value={outputJson}
+                  readOnly={true}
+                  height="75vh"
+                  onChange={() => {}}
+                />
               ) : (
                 <div className="h-full bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center">
                   <span className="text-gray-500">
@@ -304,9 +331,15 @@ const JsonFormatter = ({
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold text-gray-800">Input JSON</h3>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Input JSON
+                </h3>
                 <div className="flex gap-2">
-                  <Button onClick={processJson} disabled={!validationResult.valid} size="sm">
+                  <Button
+                    onClick={processJson}
+                    disabled={!validationResult.valid}
+                    size="sm"
+                  >
                     {activeTab === "format" ? "Format" : "Minify"}
                   </Button>
                   <Button
@@ -348,10 +381,13 @@ const JsonFormatter = ({
                 </h3>
                 {outputJson && (
                   <div className="flex items-center gap-2">
-                    <Button onClick={handleCopy} size="sm">
-                      {copySuccess ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    <Button onClick={handleCopy} size="sm" variant="outline">
+                      <Copy className="w-4 h-4" />
                     </Button>
-                    <DownloadDropdown content={outputJson} filename="json-output" />
+                    <DownloadDropdown
+                      content={outputJson}
+                      filename="json-output"
+                    />
                   </div>
                 )}
               </div>
@@ -382,5 +418,3 @@ const JsonFormatter = ({
 };
 
 export default JsonFormatter;
-
-

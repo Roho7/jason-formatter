@@ -43,7 +43,9 @@ const buttonStyles = {
     },
     active: {
       background:
-        "radial-gradient(92.09% 124.47% at 50% 99.24%, rgba(221, 226, 238, 0.40) 58.91%, rgba(187, 197, 221, 0.90) 100%)",
+        "radial-gradient(82.09% 124.47% at 50% 99.24%, rgba(221, 226, 238, 0.40) 58.91%, rgba(187, 197, 221, 0.90) 100%)",
+      boxShadow: "0 10px 10px -6px rgba(187, 197, 221, 0.70)",
+      transform: "translateY(-2px)",
     },
   },
 };
