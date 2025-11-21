@@ -5,7 +5,7 @@ import JsonEditor from "../json.editor";
 import JsonDiff from "../json-diff";
 import ObjectConverter from "../object.converter";
 import DownloadDropdown from "../download.dropdown";
-import { Copy, Check, AlertCircle, History, Upload, Code } from "lucide-react";
+import { Copy, Check, AlertCircle, History, Upload, Code, Save } from "lucide-react";
 import {
   getLatestJsonEntry,
   handlePasteEvent,
@@ -244,7 +244,7 @@ const JsonFormatter = ({
                   className="flex items-center gap-2"
                   disabled={!validationResult.valid}
                 >
-                  <History className="w-4 h-4" />
+                  <Save className="w-4 h-4" />
                   Save
                 </Button>
                 <label className="flex items-center text-sm gap-2 px-3 py-2 h-9 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
@@ -336,7 +336,7 @@ const JsonFormatter = ({
                     size="sm"
                     disabled={!validationResult.valid}
                   >
-                    <History className="w-4 h-4" />
+                    <Save className="w-4 h-4" />
                   </Button>
                   <label className="flex items-center text-sm gap-2 px-2 py-1 h-9 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
                     <Upload className="w-3 h-3" />

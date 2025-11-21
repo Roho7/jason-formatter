@@ -232,10 +232,10 @@ const generateJsonTitle = (jsonObj: any): string => {
 export const getTabs = () =>{
   // Check if we're in the browser environment
   if (typeof window === 'undefined') {
-    return [{ id: '1', label: 'Tab 1' }];
+    return [];
   }
   const tabs = localStorage.getItem(TABS_KEY);
-  return tabs ? JSON.parse(tabs) : [{ id: '1', label: 'Tab 1' }];
+  return tabs ? JSON.parse(tabs) : [];
 }
 
 export const saveTabs = (tabs: { id: string; label: string; }[]) =>{

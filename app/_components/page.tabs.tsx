@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Plus, X } from "lucide-react";
 import React, { useRef } from "react";
+import { saveTabs } from "../_utils/utils";
 
 type TabPageProps = {
   activeTabId?: string;
@@ -109,11 +110,12 @@ const PageTabs = ({
       <RenameModal
         ref={renameModalRef}
         onSave={(name) => {
-          setPageTabs(
-            pageTabs.map((t) =>
-              t.id === activeTabId ? { ...t, label: name } : t,
-            ),
-          );
+          const updatedTabs  = pageTabs.map((t) =>
+            t.id === activeTabId ? { ...t, label: name } : t,
+          )
+          setPageTabs(updatedTabs);
+          saveTabs(updatedTabs);
+
           setActiveTabId(activeTabId);
         }}
       />

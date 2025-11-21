@@ -17,6 +17,7 @@ export default function Home() {
     if (storedTabs.length === 0) {
       const newTabId = Date.now().toString();
       setPageTabs([{ id: newTabId, label: `Tab ${pageTabs.length + 1}` }]);
+      saveTabs([{ id: newTabId, label: `Tab ${pageTabs.length + 1}` }]);
       setActiveTabId(newTabId);
     } else {
       setPageTabs(storedTabs);
@@ -34,17 +35,26 @@ export default function Home() {
   const handleOpenTab = () => {
 
     const newTabId = Date.now().toString();
-    pageTabs.length < 10
-      ? setPageTabs([
+    if (pageTabs.length < 10) {
+      setPageTabs([
           ...pageTabs,
           {
             id: newTabId,
             label: `Tab ${pageTabs.length + 1}`,
           },
         ])
-      : toast.error("Work with what you have! No more tabs allowed");
+    } else {
+      toast.error("Work with what you have! No more tabs allowed");
+      return;
+    }
 
-    saveTabs(pageTabs);
+    saveTabs([
+      ...pageTabs,
+      {
+        id: newTabId,
+        label: `Tab ${pageTabs.length + 1}`,
+      },
+    ]);
     setActiveTabId(newTabId);
   };
 
