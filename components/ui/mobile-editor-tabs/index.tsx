@@ -13,7 +13,7 @@ type Props = {
 const MobileEditorTabs = ({ activeTab, handleTabChange }: Props) => {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger asChild className='flex sm:hidden'>
         <Button size="sm" variant="outline" className="flex items-center gap-2 min-w-full">
           {editorTabs.find((tab) => tab.id === activeTab)?.icon}
           <span>{editorTabs.find((tab) => tab.id === activeTab)?.label}</span>
