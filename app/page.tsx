@@ -92,7 +92,7 @@ export default function Home() {
           pageTabs={pageTabs}
           setPageTabs={setPageTabs}
         >
-          <div className="bg-card rounded-2xl shadow-xl px-8 py-4 ">
+          <div className="bg-card rounded-2xl shadow-xl sm:px-8 sm:py-4 px-2 py-2">
             <JsonFormatter
               tab_id={activeTabId}
               activeTab={activeTab}

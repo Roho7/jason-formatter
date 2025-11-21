@@ -44,8 +44,8 @@ const PageTabs = ({
   const renameModalRef = useRef<RenameModalRef>(null);
 
   return (
-    <Tabs defaultValue={activeTabId} value={activeTabId} className="w-full">
-      <TabsList className="flex gap-2 shadow-inner w-full bg-slate-200 overflow-x-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none">
+    <Tabs defaultValue={activeTabId} value={activeTabId} className="">
+      <TabsList className="gap-2 shadow-inner w-full bg-slate-200 overflow-x-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {pageTabs.map((tab) => (
           <ContextMenu key={tab.id}>
             <TabsTrigger
@@ -53,8 +53,9 @@ const PageTabs = ({
               value={tab.id}
               onClick={() => setActiveTabId(tab.id)}
               asChild
+              className="min-w-[90px]"
             >
-              <ContextMenuTrigger>{tab.label}</ContextMenuTrigger>
+              <ContextMenuTrigger className="truncate text-nowrap overflow-ellipsis">{tab.label}</ContextMenuTrigger>
             </TabsTrigger>
             <ContextMenuContent className="w-52">
               <ContextMenuItem

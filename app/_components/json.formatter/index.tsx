@@ -22,7 +22,6 @@ import {
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { validateJson } from "../../_utils/validators";
 import { useSwipeHandlers } from "../../_utils/mousefunctions";
-import { BiLogoTypescript } from "react-icons/bi";
 
 import {
   processJsonByTab,
@@ -31,6 +30,8 @@ import {
   handleCopy as handleCopyUtil,
 } from "./utils";
 import ErrorCallout from "@/components/ui/error-callout";
+import { editorTabs } from "@/app/_utils/nav";
+import MobileEditorTabs from "@/components/ui/mobile-editor-tabs";
 
 const tips = [
   {
@@ -75,22 +76,7 @@ const JsonFormatter = ({
   });
   const [currentView, setCurrentView] = useState<"input" | "output">("input");
 
-  const tabs = [
-    {
-      id: "format",
-      label: "Prettify",
-      icon: "🎨",
-      shortcut: ["alt", "⇧", "p"],
-    },
-    { id: "minify", label: "Minify", icon: "📦", shortcut: ["alt", "⇧", "m"] },
-    { id: "diff", label: "Compare", icon: "🔍", shortcut: ["alt", "⇧", "c"] },
-    {
-      id: "object-convert",
-      label: "JSON to Type",
-      icon: <BiLogoTypescript className="text-[#007acc] w-6 h-6" />,
-      shortcut: ["alt", "⇧", "o"],
-    },
-  ];
+  
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -170,8 +156,8 @@ const JsonFormatter = ({
   return (
     <div className="space-y-4 flex flex-col h-full relative">
       <div className="flex justify-between pb-4 border-b border-border items-center">
-        <div className="flex flex-wrap gap-2">
-          {tabs.map((tab) => (
+        <div className="hidden lg:flex flex-wrap gap-2">
+          {editorTabs.map((tab) => (
             <Tooltip key={tab.id}>
               <TooltipTrigger asChild>
                 <Button
@@ -195,6 +181,7 @@ const JsonFormatter = ({
             </Tooltip>
           ))}
         </div>
+          <MobileEditorTabs activeTab={activeTab} handleTabChange={handleTabChange} />
         <h1 className="hidden sm:block text-xl text-gray-200 shdow-inner whitespace-nowrap">
           {getTitle()}
         </h1>
