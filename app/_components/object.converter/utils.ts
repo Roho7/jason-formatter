@@ -45,7 +45,7 @@ export function convertJsonToTsType(inputContent: any, indent = 0): string {
   // Arrays
   if (Array.isArray(inputContent)) {
     if (inputContent.length === 0) return "any[]";
-    let typeArray = inputContent.map((item: any) => typeof item);
+    const typeArray = inputContent.map((item: any) => typeof item);
 
     if (typeArray.every((type: string) => type === "string")) return "string[]";
     if (typeArray.every((type: string) => type === "number")) return "number[]";
