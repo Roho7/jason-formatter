@@ -56,6 +56,7 @@ const ObjectConverter = ({ tab_id }: { tab_id?: string }) => {
     const result = convertJsonToTsType(JSON.parse(inputContent));
     setOutputContent(result);
     setValidationResult({ valid: true, error: null });
+    setCurrentView("output");
   }, [inputContent]);
 
   const saveCurrentContent = useCallback(() => {

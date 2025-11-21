@@ -113,6 +113,7 @@ const JsonFormatter = ({
     const result = processJsonByTab(inputJson, activeTab);
     setOutputJson(result.output);
     setValidationResult(result.validation);
+    setCurrentView("output");
   }, [inputJson, activeTab]);
 
   const saveCurrentJson = useCallback(() => {
