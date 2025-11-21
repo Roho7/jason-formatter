@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 interface DiffHighlight {
   lineNumber: number;
@@ -14,7 +15,8 @@ const JsonEditor = ({
   height = '400px',
   theme = 'vs-dark',
   onValidationStatusChange,
-  diffHighlights = []
+  diffHighlights = [],
+  language = 'json'
 }:{
   value: string;
   onChange: (value: string) => void;
@@ -23,11 +25,13 @@ const JsonEditor = ({
   theme?: string;
   onValidationStatusChange?: (status: { valid: boolean; error: string | null }) => void;
   diffHighlights?: DiffHighlight[];
+  language?: string;
 }) => {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
   const decorationIdsRef = useRef<string[]>([]);
   const highlightTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
 
   const applyDiffHighlights = () => {
     if (!editorRef.current || !monacoRef.current) return;
@@ -42,10 +46,8 @@ const JsonEditor = ({
       decorationIdsRef.current = editor.deltaDecorations(decorationIdsRef.current, []);
     }
 
-    // If no highlights, just return after clearing
     if (diffHighlights.length === 0) return;
 
-    // Filter out highlights for lines that don't exist
     const totalLines = model.getLineCount();
     const validHighlights = diffHighlights.filter(highlight => 
       highlight.lineNumber > 0 && highlight.lineNumber <= totalLines
@@ -53,7 +55,6 @@ const JsonEditor = ({
 
     if (validHighlights.length === 0) return;
 
-    // Create decorations for diff highlights
     const decorations = validHighlights.map(highlight => {
       let className = '';
       let backgroundColor = '';
@@ -206,7 +207,7 @@ const JsonEditor = ({
       <Editor
         height={height}
         width="100%"
-        defaultLanguage="json"
+        defaultLanguage={language}
         value={value}
         onChange={handleEditorChange}
         onMount={handleEditorDidMount}
@@ -227,7 +228,7 @@ const JsonEditor = ({
           formatOnType: true,
           folding: true,
           bracketPairColorization: { enabled: true },
-          glyphMargin: true
+          glyphMargin: true,
         }}
       />
     </div>

@@ -1,15 +1,15 @@
 import React, { useState, useMemo, useEffect } from "react";
 
 import { ArrowLeftRight, Copy, Download } from "lucide-react";
-import JsonEditor from "./json.editor";
+
 import { Button } from "@/components/ui/button";
-import {
-  saveJsonEntry,
-  getLatestJsonEntry,
-  handlePasteEvent,
-  formatJson,
-  validateJson,
-} from "../_utils/utils";
+
+import { DiffResult, exportDifferencesToCSV } from "./diff.utils";
+import { formatJson, getLatestJsonEntry, handlePasteEvent } from "@/app/_utils/utils";
+import { validateJson } from "@/app/_utils/validators";
+import { useSwipeHandlers } from "@/app/_utils/mousefunctions";
+import DownloadDropdown from "../download.dropdown";
+import JsonEditor from "../json.editor";
 
 interface DiffHighlight {
   lineNumber: number;
@@ -17,19 +17,6 @@ interface DiffHighlight {
   isOldLine?: boolean;
 }
 
-interface DiffResult {
-  key: string;
-  type: "added" | "removed" | "modified";
-  value?: any;
-  oldValue?: any;
-  newValue?: any;
-  line?: number;
-  leftLine?: number;
-  rightLine?: number;
-  side?: "left" | "right";
-  leftLineContent?: string;
-  rightLineContent?: string;
-}
 
 const JsonDiff = ({ tab_id }: { tab_id: string }) => {
   const [leftJson, setLeftJson] = useState("");
@@ -37,10 +24,7 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
   const [leftValid, setLeftValid] = useState(true);
   const [rightValid, setRightValid] = useState(true);
   const [currentView, setCurrentView] = useState<'left' | 'right'>('left');
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-  // Load the latest JSON entries on component mount
   useEffect(() => {
     const latestLeftEntry = getLatestJsonEntry("diff-left", tab_id);
     const latestRightEntry = getLatestJsonEntry("diff-right", tab_id);
@@ -60,7 +44,6 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
     }
   }, [tab_id]);
 
-  // Add keyboard event listeners for paste detection
   useEffect(() => {
     const handleSave = () => {
       // Check if the focused element is in the left or right editor
@@ -80,17 +63,14 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
     handleSave();
   }, [leftJson, rightJson]);
 
-  // Helper function to get the actual line content
   const getLineContent = (jsonString: string, lineNumber: number): string => {
     const lines = jsonString.split("\n");
     return lines[lineNumber - 1] || "";
   };
 
-  // Improved helper function to find line number of a key in JSON string
   const findNestedLineNumber = (jsonString: string, path: string[]): number => {
     const lines = jsonString.split("\n");
 
-    // For simple cases (single level), just look for the key
     if (path.length === 1) {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -100,7 +80,6 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
       }
     }
 
-    // For nested paths, track the nesting level
     let foundPath: string[] = [];
     let currentLevel = 0;
     let targetLevel = 0;
@@ -137,7 +116,6 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
     return 1; // Default fallback
   };
 
-  // Enhanced diff logic with highlights for both editors
   const { leftHighlights, rightHighlights, diffResults } = useMemo(() => {
     if (!leftValid || !rightValid) {
       return { leftHighlights: [], rightHighlights: [], diffResults: null };
@@ -151,7 +129,6 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
       const rightHighlights: DiffHighlight[] = [];
       const differences: DiffResult[] = [];
 
-      // Function to recursively compare objects and track paths
       const compareObjects = (left: any, right: any, path: string[] = []) => {
         const leftKeys =
           left && typeof left === "object" && !Array.isArray(left)
@@ -168,7 +145,6 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
           const pathString = currentPath.join(".");
 
           if (!(key in left)) {
-            // Added in right
             const lineNum = findNestedLineNumber(rightJson, currentPath);
             if (lineNum > 0) {
               rightHighlights.push({
@@ -185,7 +161,6 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
               });
             }
           } else if (!(key in right)) {
-            // Removed from left
             const lineNum = findNestedLineNumber(leftJson, currentPath);
             if (lineNum > 0) {
               leftHighlights.push({
@@ -209,10 +184,8 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
             !Array.isArray(left[key]) &&
             !Array.isArray(right[key])
           ) {
-            // Recursively compare nested objects
             compareObjects(left[key], right[key], currentPath);
           } else if (JSON.stringify(left[key]) !== JSON.stringify(right[key])) {
-            // Modified
             const leftLineNum = findNestedLineNumber(leftJson, currentPath);
             const rightLineNum = findNestedLineNumber(rightJson, currentPath);
 
@@ -258,117 +231,29 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
     }
   }, [leftJson, rightJson, leftValid, rightValid]);
 
-  // Swipe detection constants
-  const minSwipeDistance = 50;
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe && currentView === 'left') {
-      setCurrentView('right');
-    }
-    if (isRightSwipe && currentView === 'right') {
-      setCurrentView('left');
-    }
-  };
+  // ------------------------------------------------------------//
+  //                      SWIPE FUNCTIONS                        // 
+  // ------------------------------------------------------------//
+  const swipeHandlers = useSwipeHandlers({
+    currentView,
+    setCurrentView,
+    leftView: "left",
+    rightView: "right",
+  });
 
   const swapJsons = () => {
     const temp = leftJson;
     setLeftJson(rightJson);
     setRightJson(temp);
   };
-
-  const exportDifferencesToCSV = () => {
-    if (!diffResults || diffResults.length === 0) {
-      alert("No differences to export");
-      return;
-    }
-
-    // CSV Header
-    const headers = ["line_number", "left_key", "right_key", "left_value", "right_value"];
-    
-    // Convert differences to CSV rows
-    const rows = diffResults.map((diff) => {
-      let lineNumber = "";
-      let leftKey = "";
-      let rightKey = "";
-      let leftValue = "";
-      let rightValue = "";
-
-      if (diff.type === "modified") {
-        // For modified entries, we have both left and right
-        lineNumber = diff.leftLine?.toString() || diff.rightLine?.toString() || "";
-        leftKey = diff.key;
-        rightKey = diff.key;
-        leftValue = JSON.stringify(diff.oldValue);
-        rightValue = JSON.stringify(diff.newValue);
-      } else if (diff.type === "removed") {
-        // For removed entries, only left side has data
-        lineNumber = diff.line?.toString() || "";
-        leftKey = diff.key;
-        rightKey = "";
-        leftValue = JSON.stringify(diff.value);
-        rightValue = "";
-      } else if (diff.type === "added") {
-        // For added entries, only right side has data
-        lineNumber = diff.line?.toString() || "";
-        leftKey = "";
-        rightKey = diff.key;
-        leftValue = "";
-        rightValue = JSON.stringify(diff.value);
-      }
-
-      // Escape and format values for CSV
-      const escapeCsvValue = (value: string) => {
-        if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-          return `"${value.replace(/"/g, '""')}"`;
-        }
-        return value;
-      };
-
-      return [
-        lineNumber,
-        escapeCsvValue(leftKey),
-        escapeCsvValue(rightKey),
-        escapeCsvValue(leftValue),
-        escapeCsvValue(rightValue),
-      ].join(",");
-    });    // Combine headers and 
-    const csvContent = [headers.join(","), ...rows].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute("href", url);
-    link.setAttribute("download", `json-diff-${new Date().toISOString().slice(0, 10)}.csv`);
-    link.style.visibility = "hidden";
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }; 
+; 
 
   const handleLeftChange = (value: string) => {
     setLeftJson(value);
     
-    // Auto-format on paste detection
     setTimeout(() => {
       try {
-        const validation = validateJson({ jsonString: value });
+        const validation = validateJson(value);
         if (validation.valid && value.trim()) {
           const formatted = formatJson({ jsonString: value, indent: 2 });
           if (formatted !== value) {
@@ -376,7 +261,6 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
           }
         }
       } catch (error) {
-        // Silent fail - don't format invalid JSON
       }
     }, 100);
   };
@@ -384,10 +268,9 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
   const handleRightChange = (value: string) => {
     setRightJson(value);
     
-    // Auto-format on paste detection
     setTimeout(() => {
       try {
-        const validation = validateJson({ jsonString: value });
+        const validation = validateJson(value);
         if (validation.valid && value.trim()) {
           const formatted = formatJson({ jsonString: value, indent: 2 });
           if (formatted !== value) {
@@ -395,7 +278,6 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
           }
         }
       } catch (error) {
-        // Silent fail - don't format invalid JSON
       }
     }, 100);
   };
@@ -473,12 +355,13 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
                   {leftHighlights.length !== 1 ? "s" : ""} highlighted
                 </span>
               )}
+              <DownloadDropdown content={leftJson} filename="json-diff-left" />
             </div>
           </div>
           <JsonEditor
             value={leftJson}
             onChange={handleLeftChange}
-            height="500px"
+            height="65vh"
             onValidationStatusChange={({ valid }) => setLeftValid(valid)}
             diffHighlights={leftHighlights}
           />
@@ -505,12 +388,13 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
                   {rightHighlights.length !== 1 ? "s" : ""} highlighted
                 </span>
               )}
+              <DownloadDropdown content={rightJson} filename="json-diff-right" />
             </div>
           </div>
           <JsonEditor
             value={rightJson}
             onChange={handleRightChange}
-            height="500px"
+            height="65vh"
             onValidationStatusChange={({ valid }) => setRightValid(valid)}
             diffHighlights={rightHighlights}
           />
@@ -520,9 +404,7 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
       {/* Mobile Layout with Swipe */}
       <div 
         className="lg:hidden relative overflow-hidden"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
+        {...swipeHandlers}
       >
         <div 
           className={`transition-transform duration-300 ease-in-out ${
@@ -550,12 +432,13 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
                   {leftHighlights.length !== 1 ? "s" : ""} highlighted
                 </span>
               )}
+              <DownloadDropdown content={leftJson} filename="json-diff-left" />
             </div>
           </div>
           <JsonEditor
             value={leftJson}
             onChange={handleLeftChange}
-            height="500px"
+            height="65vh"
             onValidationStatusChange={({ valid }) => setLeftValid(valid)}
             diffHighlights={leftHighlights}
           />
@@ -587,12 +470,13 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
                   {rightHighlights.length !== 1 ? "s" : ""} highlighted
                 </span>
               )}
+              <DownloadDropdown content={rightJson} filename="json-diff-right" />
             </div>
           </div>
           <JsonEditor
             value={rightJson}
             onChange={handleRightChange}
-            height="500px"
+            height="65vh"
             onValidationStatusChange={({ valid }) => setRightValid(valid)}
             diffHighlights={rightHighlights}
           />
@@ -613,7 +497,7 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
             <h4 className="font-semibold text-gray-800">
               Differences Found:
             </h4>
-            <Button variant="default" className="flex items-center gap-2" onClick={exportDifferencesToCSV}>
+            <Button variant="default" className="flex items-center gap-2" onClick={() => exportDifferencesToCSV(diffResults)}>
               <Download className="w-4 h-4" />
               Export CSV
             </Button>

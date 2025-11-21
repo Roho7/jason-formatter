@@ -1,10 +1,11 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import JsonFormatter from "./_components/json.formatter";
+
 import PageTabs from "./_components/page.tabs";
 import { getTabs, JsonEntry, saveTabs } from "./_utils/utils";
 import { toast, Toaster } from "sonner";
 import { HotkeysProvider, useHotkeys } from "react-hotkeys-hook";
+import JsonFormatter from "./_components/json.formatter";
 
 export default function Home() {
   const [pageTabs, setPageTabs] = useState<{ id: string; label: string }[]>([]);

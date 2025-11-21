@@ -1,61 +1,83 @@
-// JSON formatting utilities
 "use client";
 
 import { toast } from "sonner";
+import { validateJson } from "./validators";
 
-interface FormatJsonParams {
-  jsonString: string;
-  indent?: number;
-}
+export { formatJson, minifyJson, convertObjectToJson, convertJsonToObject, parseJsonSafely, deepEqual } from "./jsonProcessors";
 
-interface MinifyJsonParams {
-  jsonString: string;
-}
-
-interface ValidateJsonParams {
-  jsonString: string;
-}
-
-export const formatJson = ({ jsonString, indent = 2 }: FormatJsonParams): string => {
-  const parsed = JSON.parse(jsonString);
-  return JSON.stringify(parsed, null, indent);
-};
-
-export const minifyJson = ({ jsonString }: MinifyJsonParams): string => {
-  const parsed = JSON.parse(jsonString);
-  return JSON.stringify(parsed);
-};
-
-export const validateJson = ({ jsonString }: ValidateJsonParams): { valid: boolean; error: string | null } => {
+export const convertJsonToCsv = (jsonString: string): string => {
   try {
-    if (!jsonString.trim()) {
-      return { valid: false, error: 'JSON cannot be empty' };
+    const parsed = JSON.parse(jsonString);
+    
+    const escapeCsvValue = (value: any): string => {
+      if (value === null || value === undefined) return '';
+      const str = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const flattenObject = (obj: any, prefix = ''): Record<string, any> => {
+      const flattened: Record<string, any> = {};
+      
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          const newKey = prefix ? `${prefix}.${key}` : key;
+          
+          if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+            Object.assign(flattened, flattenObject(obj[key], newKey));
+          } else {
+            flattened[newKey] = obj[key];
+          }
+        }
+      }
+      
+      return flattened;
+    };
+    
+    if (Array.isArray(parsed)) {
+      if (parsed.length === 0) return '';
+      
+      const flattenedItems = parsed.map(item => flattenObject(item));
+      const allHeaders = new Set<string>();
+      flattenedItems.forEach(item => {
+        Object.keys(item).forEach(key => allHeaders.add(key));
+      });
+      
+      const headers = Array.from(allHeaders).sort();
+      
+      const csvRows = [
+        headers.join(','),
+        ...flattenedItems.map(item => 
+          headers.map(header => escapeCsvValue(item[header] || '')).join(',')
+        )
+      ];
+      
+      return csvRows.join('\n');
+    } else if (typeof parsed === 'object' && parsed !== null) {
+      const flattened = flattenObject(parsed);
+      const headers = Object.keys(flattened).sort();
+      
+      return [
+        headers.join(','),
+        headers.map(header => escapeCsvValue(flattened[header])).join(',')
+      ].join('\n');
     }
-    JSON.parse(jsonString);
-    return { valid: true, error: null };
-  } catch (error: any) {
-    return { valid: false, error: error.message };
+    
+    return '';
+  } catch (error) {
+    throw new Error('Failed to convert JSON to CSV');
   }
 };
 
-export const parseJsonSafely = ({jsonString}:{jsonString: string}) => {
-    try {
-      return JSON.parse(jsonString);
-    } catch (error: any) {
-      return null;
-    }
-  };
-  
-  export const deepEqual = ({obj1, obj2}:{obj1: any, obj2: any}) => {
-    return JSON.stringify(obj1) === JSON.stringify(obj2);
-  };
 
 // JSON Storage utilities
 export interface JsonEntry {
   id: string;
   content: string;
   timestamp: number;
-  type: 'format' | 'diff-left' | 'diff-right' | 'minify';
+  type: 'format' | 'diff-left' | 'diff-right' | 'minify' | 'object-convert';
   title?: string;
 }
 
@@ -162,7 +184,7 @@ export const handlePasteEvent = (
     setTimeout(() => {
       try {
         // Validate the JSON before saving
-        const validation = validateJson({ jsonString: currentContent });
+        const validation = validateJson(currentContent);
         if (validation.valid && currentContent.trim()) {
           // Generate a title from the JSON content
           const parsed = JSON.parse(currentContent);
