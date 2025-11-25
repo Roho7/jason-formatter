@@ -43,7 +43,7 @@ export default function RootLayout({
       <head></head>
       <body className={`${figTree.variable} ${geistMono.variable} antialiased`}>
         {children}
-        <Script
+        {/* <Script
           src="https://storage.ko-fi.com/cdn/scripts/overlay-widget.js"
           strategy="beforeInteractive"
         ></Script>
@@ -52,9 +52,10 @@ export default function RootLayout({
     'type': 'floating-chat',
     'floating-chat.donateButton.text': 'Support me',
     'floating-chat.donateButton.background-color': '#ffffff',
-    'floating-chat.donateButton.text-color': '#323842'
+    'floating-chat.donateButton.text-color': '#323842',
+
   });`}
-        </Script>
+        </Script> */}
       </body>
     </html>
   );
