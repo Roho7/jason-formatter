@@ -7,7 +7,6 @@ export const editorTabs = [
       icon: "🎨",
       shortcut: ["alt", "⇧", "p"],
     },
-    { id: "minify", label: "Minify", icon: "📦", shortcut: ["alt", "⇧", "m"] },
     { id: "diff", label: "Compare", icon: "🔍", shortcut: ["alt", "⇧", "c"] },
     {
       id: "object-convert",

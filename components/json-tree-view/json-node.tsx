@@ -33,25 +33,26 @@ const JsonNode = ({ data, isConnectable }: NodeProps) => {
         />
       )}
       
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 h-full">
         {key && (
           <div className="flex items-center gap-1 border-b pb-1 mb-1 border-border/50">
             <span className="text-muted-foreground font-semibold">{key}</span>
           </div>
         )}
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap text-wrap h-fit">
           {!isComplex ? (
             isReadOnly ? (
-               <span className={cn("truncate max-w-[200px]", getTypeColor(type))}>
+               <span className={cn("break-all whitespace-pre-wrap max-w-[200px] max-h-[120px] overflow-y-auto block scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent", getTypeColor(type))}>
                 {String(value)}
               </span>
             ) : (
-              <input
+              <textarea
                 className={cn(
-                  "bg-transparent outline-none border-none p-0 h-auto w-full min-w-[50px]",
+                  "bg-transparent outline-none border-none p-0 w-full min-w-[50px] resize-none scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent",
                   getTypeColor(type)
                 )}
+                style={{ minHeight: '20px', maxHeight: '120px' }}
                 defaultValue={value}
                 onChange={(e) => onEdit && onEdit(e.target.value)}
               />

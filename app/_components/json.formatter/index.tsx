@@ -112,6 +112,8 @@ const JsonFormatter = ({
           '{\n  "name": "Jason Derulo",\n  "age": 30,\n  "email": "jason@derulo.com",\n  "hobbies": ["😎", "🫡", "🫠"],\n  "address": {\n    "street": "Florida Keys",\n    "city": "Miami",\n    "zipCode": "33139"\n  }\n}',
         );
       }
+      setOutputJson("");
+      setValidationResult({ valid: true, error: null });
     }
   }, [tab_id]);
 
@@ -320,6 +322,7 @@ const JsonFormatter = ({
                     />
                  ) : (
                    <JsonTreeView 
+                      key={tab_id}
                       data={inputJson} 
                       onChange={handleInputChange}
                       className="w-full h-full min-h-[75vh]"

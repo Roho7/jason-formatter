@@ -17,7 +17,7 @@ import { jsonToGraph } from './utils';
 import dagre from 'dagre';
 
 const nodeWidth = 200;
-const nodeHeight = 80;
+const nodeHeight = 160;
 
 const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
   const dagreGraph = new dagre.graphlib.Graph();
@@ -108,6 +108,7 @@ const JsonTreeViewContent = ({ data, onChange, readOnly, className }: JsonTreeVi
   }, [data, onChange, readOnly]);
 
   useEffect(() => {
+    console.log("data", data)
     try {
       if (!data) return;
       const jsonData = JSON.parse(data);
@@ -137,7 +138,12 @@ const JsonTreeViewContent = ({ data, onChange, readOnly, className }: JsonTreeVi
     } catch (e) {
       console.error("Invalid JSON for Tree View", e);
     }
-  }, [data, readOnly, setNodes, setEdges, handleNodeEdit]);
+  }, [data]);
+
+  useEffect(() => {
+    console.log("nodes", nodes)
+    console.log("edges", edges)
+  }, [nodes, edges])
 
   return (
     <div className={className || "w-full h-full min-h-[500px]"}>
