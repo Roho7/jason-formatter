@@ -54,7 +54,7 @@ const DownloadDropdown = ({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="outline" disabled={disabled || !content.trim()}>
+        <Button size={window.innerWidth < 768 ? "sm" : "xs"} variant="outline" disabled={disabled || !content.trim()}>
           <Download className="w-4 h-4" />
         </Button>
       </DropdownMenuTrigger>

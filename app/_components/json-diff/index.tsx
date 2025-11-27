@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useEffect } from "react";
 
-import { ArrowLeftRight, Copy, Download } from "lucide-react";
+import { ArrowLeftRight, Copy, Download, Code, Workflow, Maximize2, Minimize2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ViewSwitcher } from "@/components/view-switcher";
+import { cn } from "@/lib/utils";
 
 import { DiffResult, exportDifferencesToCSV } from "./diff.utils";
 import { formatJson, getLatestJsonEntry, handlePasteEvent } from "@/app/_utils/utils";
@@ -11,6 +13,7 @@ import { useSwipeHandlers } from "@/app/_utils/mousefunctions";
 import DownloadDropdown from "../download.dropdown";
 import JsonEditor from "../json.editor";
 import { handleCopy } from "../json.formatter/utils";
+import JsonTreeView from "@/components/json-tree-view";
 
 interface DiffHighlight {
   lineNumber: number;
@@ -25,6 +28,13 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
   const [leftValid, setLeftValid] = useState(true);
   const [rightValid, setRightValid] = useState(true);
   const [currentView, setCurrentView] = useState<'left' | 'right'>('left');
+
+  // View Modes
+  const [leftViewMode, setLeftViewMode] = useState<"code" | "tree">("code");
+  const [rightViewMode, setRightViewMode] = useState<"code" | "tree">("code");
+
+  // Layout Expansion
+  const [expandedSide, setExpandedSide] = useState<"left" | "right" | null>(null);
 
   useEffect(() => {
     const latestLeftEntry = getLatestJsonEntry("diff-left", tab_id);
@@ -283,6 +293,10 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
     }, 100);
   };
 
+  const toggleExpand = (side: "left" | "right") => {
+    setExpandedSide(current => current === side ? null : side);
+  };
+
   return (
     <div className="space-y-6">
       {/* Mobile View Selector */}
@@ -316,7 +330,7 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
         👆 Tap to switch or swipe left/right to navigate
       </div>
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-800">JSON Diff</h3>
+        <h3 className="text-lg font-semibold text-gray-800"></h3>
         <div className="flex items-center gap-4">
           {diffResults && diffResults.length > 0 && (
             <div className="text-sm text-gray-600">
@@ -334,12 +348,37 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
       
 
       {/* Desktop Layout */}
-      <div className="hidden lg:grid lg:grid-cols-2 gap-6">
-        <div data-testid="left-editor">
+      <div className="hidden lg:flex gap-6 w-full">
+        <div 
+          data-testid="left-editor" 
+          className={cn(
+            "flex flex-col transition-all duration-300 ease-in-out min-w-0",
+            expandedSide === "left" ? "flex-[4]" : expandedSide === "right" ? "flex-[1]" : "flex-1"
+          )}
+        >
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-gray-700">
-              Left JSON
-            </label>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">
+                Left JSON
+              </label>
+              <ViewSwitcher 
+                value={leftViewMode} 
+                onValueChange={setLeftViewMode} 
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => toggleExpand("left")}
+              >
+                {expandedSide === "left" ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            
             <div className="flex items-center gap-2">
               <span
                 className={`text-xs px-2 py-1 rounded ${
@@ -362,20 +401,54 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
               <DownloadDropdown content={leftJson} filename="json-diff-left" />
             </div>
           </div>
-          <JsonEditor
-            value={leftJson}
-            onChange={handleLeftChange}
-            height="65vh"
-            onValidationStatusChange={({ valid }) => setLeftValid(valid)}
-            diffHighlights={leftHighlights}
-          />
+          <div className="flex-1 border rounded-md overflow-hidden">
+            {leftViewMode === "code" ? (
+              <JsonEditor
+                value={leftJson}
+                onChange={handleLeftChange}
+                height="65vh"
+                onValidationStatusChange={({ valid }) => setLeftValid(valid)}
+                diffHighlights={leftHighlights}
+              />
+            ) : (
+              <JsonTreeView
+                data={leftJson}
+                onChange={handleLeftChange}
+                className="w-full h-full min-h-[65vh]"
+              />
+            )}
+          </div>
         </div>
 
-        <div data-testid="right-editor">
+        <div 
+          data-testid="right-editor"
+          className={cn(
+            "flex flex-col transition-all duration-300 ease-in-out min-w-0",
+            expandedSide === "right" ? "flex-[4]" : expandedSide === "left" ? "flex-[1]" : "flex-1"
+          )}
+        >
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-gray-700">
-              Right JSON
-            </label>
+             <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">
+                Right JSON
+              </label>
+              <ViewSwitcher 
+                value={rightViewMode} 
+                onValueChange={setRightViewMode} 
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => toggleExpand("right")}
+              >
+                {expandedSide === "right" ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
             <div className="flex items-center gap-2">
               <span
                 className={`text-xs px-2 py-1 rounded ${
@@ -398,13 +471,23 @@ const JsonDiff = ({ tab_id }: { tab_id: string }) => {
               <DownloadDropdown content={rightJson} filename="json-diff-right" />
             </div>
           </div>
-          <JsonEditor
-            value={rightJson}
-            onChange={handleRightChange}
-            height="65vh"
-            onValidationStatusChange={({ valid }) => setRightValid(valid)}
-            diffHighlights={rightHighlights}
-          />
+          <div className="flex-1 border rounded-md overflow-hidden">
+            {rightViewMode === "code" ? (
+              <JsonEditor
+                value={rightJson}
+                onChange={handleRightChange}
+                height="65vh"
+                onValidationStatusChange={({ valid }) => setRightValid(valid)}
+                diffHighlights={rightHighlights}
+              />
+            ) : (
+               <JsonTreeView
+                data={rightJson}
+                onChange={handleRightChange}
+                className="w-full h-full min-h-[65vh]"
+              />
+            )}
+          </div>
         </div>
       </div>
 

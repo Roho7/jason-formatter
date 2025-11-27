@@ -5,7 +5,23 @@ import JsonEditor from "../json.editor";
 import JsonDiff from "../json-diff";
 import ObjectConverter from "../object.converter";
 import DownloadDropdown from "../download.dropdown";
-import { Copy, Check, AlertCircle, History, Upload, Code, Save } from "lucide-react";
+
+import { 
+  Copy, 
+  Check, 
+  AlertCircle, 
+  History, 
+  Upload, 
+  Code, 
+  Save, 
+  Workflow, 
+  PanelLeft, 
+  PanelRight,
+  Maximize2,
+  Minimize2,
+  Forward,
+  ArrowRightFromLine
+} from "lucide-react";
 import {
   getLatestJsonEntry,
   handlePasteEvent,
@@ -13,6 +29,7 @@ import {
 } from "../../_utils/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ViewSwitcher } from "@/components/view-switcher";
 import { useHotkeys } from "react-hotkeys-hook";
 import {
   Tooltip,
@@ -22,6 +39,7 @@ import {
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { validateJson } from "../../_utils/validators";
 import { useSwipeHandlers } from "../../_utils/mousefunctions";
+import { cn } from "@/lib/utils";
 
 import {
   processJsonByTab,
@@ -32,6 +50,7 @@ import {
 import ErrorCallout from "@/components/ui/error-callout";
 import { editorTabs } from "@/app/_utils/nav";
 import MobileEditorTabs from "@/components/ui/mobile-editor-tabs";
+import JsonTreeView from "@/components/json-tree-view";
 
 const tips = [
   {
@@ -75,8 +94,13 @@ const JsonFormatter = ({
     error: null,
   });
   const [currentView, setCurrentView] = useState<"input" | "output">("input");
-
   
+  // View Modes
+  const [inputViewMode, setInputViewMode] = useState<"code" | "tree">("code");
+  const [outputViewMode, setOutputViewMode] = useState<"code" | "tree">("code");
+
+  // Layout Expansion
+  const [expandedSide, setExpandedSide] = useState<"left" | "right" | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -130,6 +154,10 @@ const JsonFormatter = ({
     setActiveTab(tabId);
     setOutputJson("");
     setValidationResult({ valid: true, error: null });
+  };
+
+  const toggleExpand = (side: "left" | "right") => {
+    setExpandedSide(current => current === side ? null : side);
   };
 
   const swipeHandlers = useSwipeHandlers({
@@ -225,90 +253,154 @@ const JsonFormatter = ({
             👆 Tap to switch or swipe left/right to navigate between editors
           </div>
 
-          <div className="hidden lg:flex gap-4">
-            <div className="flex-1 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-800">
-                Input JSON
-              </h3>
-              <div className="flex gap-2">
-                <Button
-                  onClick={processJson}
-                  disabled={!validationResult.valid}
-                >
-                  {activeTab === "format" && "Format JSON"}
-                  {activeTab === "minify" && "Minify JSON"}
-                </Button>
-                <Button
-                  onClick={saveCurrentJson}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                  disabled={!validationResult.valid}
-                >
-                  <Save className="w-4 h-4" />
-                  Save
-                </Button>
-                <label className="flex items-center text-sm gap-2 px-3 py-2 h-9 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
-                  <Upload className="w-3 h-3" />
-                  Upload File
-                  <Input
-                    type="file"
-                    accept=".json"
-                    onChange={handleFileUpload}
-                    className="hidden"
+          <div className="hidden lg:flex gap-4 flex-1 min-h-0">
+            {/* Left Side (Input) */}
+            <div className={cn(
+              "flex flex-col transition-all duration-300 ease-in-out min-w-0",
+              expandedSide === "left" ? "flex-[4]" : expandedSide === "right" ? "flex-[1]" : "flex-1"
+            )}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  
+                  <ViewSwitcher 
+                    value={inputViewMode} 
+                    onValueChange={setInputViewMode} 
                   />
-                </label>
-                <DownloadDropdown content={inputJson} filename="json-input" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => toggleExpand("left")}
+                  >
+                    {expandedSide === "left" ? (
+                      <Minimize2 className="h-4 w-4" />
+                    ) : (
+                      <Maximize2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    onClick={processJson}
+                    disabled={!validationResult.valid}
+                    size="xs"
+                  >
+                    <ArrowRightFromLine />
+                  </Button>
+                  <Button
+                    onClick={saveCurrentJson}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    disabled={!validationResult.valid}
+                    size="xs"
+                  >
+                    <Save className="w-4 h-4" />
+                  </Button>
+                  <label className="flex items-center text-sm h-7 px-1.5 py-0.5 gap-0.5 has-[>svg]:px-1.5 text-[0.8rem] border border-border bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                    <Upload className="size-4" />
+                    <Input
+                      type="file"
+                      accept=".json"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  <DownloadDropdown content={inputJson} filename="json-input" />
+                </div>
+              </div>
+
+              <div className="flex-1 border rounded-md overflow-hidden">
+                 {inputViewMode === "code" ? (
+                    <JsonEditor
+                      value={inputJson}
+                      onChange={handleInputChange}
+                      height="75vh"
+                      onValidationStatusChange={setValidationResult}
+                    />
+                 ) : (
+                   <JsonTreeView 
+                      data={inputJson} 
+                      onChange={handleInputChange}
+                      className="w-full h-full min-h-[75vh]"
+                   />
+                 )}
               </div>
             </div>
 
-            <div className="flex-1 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-800">
-                {activeTab === "format" ? "Formatted JSON" : "Minified JSON"}
-              </h3>
-              {outputJson && (
-                <div className="flex items-center gap-2">
-                  <Button onClick={handleCopy} size="sm" variant="outline">
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                  <DownloadDropdown
-                    content={outputJson}
-                    filename="json-output"
-                  />
-                </div>
-              )}
+            {/* Right Side (Output) */}
+            <div className={cn(
+              "flex flex-col transition-all duration-300 ease-in-out min-w-0",
+              expandedSide === "right" ? "flex-[4]" : expandedSide === "left" ? "flex-[1]" : "flex-1"
+            )}>
+              <div className="flex items-center justify-between mb-2">
+                 <div className="flex items-center justify-between w-full">
+                   <div className="flex items-center gap-2">
+                   
+                     <ViewSwitcher
+                      value={outputViewMode}
+                      onValueChange={setOutputViewMode}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => toggleExpand("right")}
+                    >
+                      {expandedSide === "right" ? (
+                        <Minimize2 className="h-4 w-4" />
+                      ) : (
+                        <Maximize2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                   </div>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      {activeTab === "format" ? "Formatted" : "Minified"}
+                    </h3>
+                 </div>
+                {outputJson && (
+                  <div className="flex items-center gap-2">
+                    <Button onClick={handleCopy} size="sm" variant="outline">
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                    <DownloadDropdown
+                      content={outputJson}
+                      filename="json-output"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 border rounded-md overflow-hidden">
+                {outputJson ? (
+                  outputViewMode === "code" ? (
+                    <JsonEditor
+                      value={outputJson}
+                      readOnly={true}
+                      height="75vh"
+                      onChange={() => {}}
+                    />
+                  ) : (
+                    <JsonTreeView 
+                      data={outputJson} 
+                      readOnly={true}
+                      className="w-full h-full min-h-[75vh]"
+                    />
+                  )
+                ) : (
+                  <div className="h-full bg-gray-50 flex items-center justify-center">
+                    <span className="text-gray-500">
+                      {activeTab === "format"
+                        ? "Formatted JSON will appear here"
+                        : "Minified JSON will appear here"}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="hidden lg:flex gap-4 flex-1 min-h-0">
-            <div className="flex-1">
-              <JsonEditor
-                value={inputJson}
-                onChange={handleInputChange}
-                height="75vh"
-                onValidationStatusChange={setValidationResult}
-              />
-            </div>
-
-            <div className="flex-1">
-              {outputJson ? (
-                <JsonEditor
-                  value={outputJson}
-                  readOnly={true}
-                  height="75vh"
-                  onChange={() => {}}
-                />
-              ) : (
-                <div className="h-full bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center">
-                  <span className="text-gray-500">
-                    {activeTab === "format"
-                      ? "Formatted JSON will appear here"
-                      : "Minified JSON will appear here"}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
+          {/* Mobile View (unchanged mostly, but could potentially support tree view if requested, plan didn't explicitly require mobile support for tree view but good to have simple fallback) */}
           <div
             className="lg:hidden relative overflow-hidden"
             {...swipeHandlers}
@@ -318,6 +410,7 @@ const JsonFormatter = ({
                 currentView === "input" ? "translate-x-0" : "-translate-x-full"
               }`}
             >
+               {/* Mobile Input Header */}
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold text-gray-800">
                   Input JSON
@@ -338,8 +431,8 @@ const JsonFormatter = ({
                   >
                     <Save className="w-4 h-4" />
                   </Button>
-                  <label className="flex items-center text-sm gap-2 px-2 py-1 h-9 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
-                    <Upload className="w-3 h-3" />
+                  <label className="flex items-center text-sm h-8 px-1.5 py-0.5 gap-0.5 has-[>svg]:px-2 text-[0.8rem] border border-border bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                    <Upload className="size-4" />
                     <Input
                       type="file"
                       accept=".json"

@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import JsonEditor from "../json.editor";
-import { ArrowLeftRight, Copy, History, Save } from "lucide-react";
+import { ArrowLeftRight, Copy, History, Save, Code, Workflow, Maximize2, Minimize2 } from "lucide-react";
 import { getLatestJsonEntry, handlePasteEvent } from "../../_utils/utils";
 import { Button } from "@/components/ui/button";
+import { ViewSwitcher } from "@/components/view-switcher";
+import { cn } from "@/lib/utils";
 import DownloadDropdown from "../download.dropdown";
 import { useSwipeHandlers } from "../../_utils/mousefunctions";
 import {
@@ -16,6 +18,7 @@ import {
 } from "./utils";
 import ErrorCallout from "@/components/ui/error-callout";
 import { handleCopy } from "../json.formatter/utils";
+import JsonTreeView from "@/components/json-tree-view";
 
 const ObjectConverter = ({ tab_id }: { tab_id?: string }) => {
   const [inputContent, setInputContent] = useState(
@@ -30,6 +33,12 @@ const ObjectConverter = ({ tab_id }: { tab_id?: string }) => {
     error: null,
   });
   const [currentView, setCurrentView] = useState<"input" | "output">("input");
+
+  // View Modes
+  const [inputViewMode, setInputViewMode] = useState<"code" | "tree">("code");
+  
+  // Layout Expansion
+  const [expandedSide, setExpandedSide] = useState<"left" | "right" | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -63,84 +72,136 @@ const ObjectConverter = ({ tab_id }: { tab_id?: string }) => {
     saveConverstionContent(inputContent, "json-to-type", tab_id || "");
   }, [inputContent, tab_id]);
 
+  const toggleExpand = (side: "left" | "right") => {
+    setExpandedSide(current => current === side ? null : side);
+  };
+
   return (
     <div className="space-y-4 flex flex-col h-full relative">
       <ErrorCallout validationResult={validationResult} />
 
-      <div className="hidden lg:flex gap-4">
-        <div className="flex-1 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-800">JSON</h3>
-          <div className="flex gap-2">
-            <Button onClick={handleConvert} disabled={!validationResult.valid}>
-              Convert
-            </Button>
-            <Button
-              onClick={saveCurrentContent}
-              variant="outline"
-              className="flex items-center gap-2"
-              disabled={!validationResult.valid}
-            >
-              <Save className="w-4 h-4" />
-              Save
-            </Button>
-            <Button
-              onClick={() => handleCopy(inputContent)}
-              size="sm"
-              variant="outline"
-            >
-              <Copy className="w-4 h-4" />
-            </Button>
-            <DownloadDropdown content={inputContent} filename="object-input" />
+      <div className="hidden lg:flex gap-4 flex-1 min-h-0">
+        <div className={cn(
+            "flex flex-col transition-all duration-300 ease-in-out min-w-0",
+            expandedSide === "left" ? "flex-[4]" : expandedSide === "right" ? "flex-[1]" : "flex-1"
+          )}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-gray-800">JSON</h3>
+              <ViewSwitcher 
+                value={inputViewMode} 
+                onValueChange={setInputViewMode} 
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => toggleExpand("left")}
+              >
+                {expandedSide === "left" ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleConvert} disabled={!validationResult.valid}>
+                Convert
+              </Button>
+              <Button
+                onClick={saveCurrentContent}
+                variant="outline"
+                className="flex items-center gap-2"
+                disabled={!validationResult.valid}
+              >
+                <Save className="w-4 h-4" />
+                Save
+              </Button>
+              <Button
+                onClick={() => handleCopy(inputContent)}
+                size="sm"
+                variant="outline"
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+              <DownloadDropdown content={inputContent} filename="object-input" />
+            </div>
+          </div>
+
+          <div className="flex-1 border rounded-md overflow-hidden">
+             {inputViewMode === "code" ? (
+                <JsonEditor
+                  value={inputContent}
+                  onChange={handleInputChange}
+                  height="86vh"
+                  language="json"
+                  onValidationStatusChange={(status: any) =>
+                    setValidationResult(status)
+                  }
+                />
+             ) : (
+                <JsonTreeView 
+                  data={inputContent} 
+                  onChange={handleInputChange}
+                  className="w-full h-full min-h-[86vh]"
+                />
+             )}
           </div>
         </div>
 
-        <div className="flex-1 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-800">
-            Typescript Type
-          </h3>
-          <div className="flex items-center gap-2">
-          <Button onClick={() => handleCopy(outputContent)} size='sm' variant='outline'>
-            <Copy className="w-4 h-4" />
-          </Button>
-          {outputContent && (
-            <DownloadDropdown
-              content={outputContent}
-              filename="converted-output"
-            />
-          )}
-        </div>
-        </div>
-      </div>
-
-      <div className="hidden lg:flex gap-4 flex-1 min-h-0">
-        <div className="flex-1">
-          <JsonEditor
-            value={inputContent}
-            onChange={handleInputChange}
-            height="86vh"
-            language="json"
-            onValidationStatusChange={(status: any) =>
-              setValidationResult(status)
-            }
-          />
-        </div>
-
-        <div className="flex-1">
-          {outputContent ? (
-            <JsonEditor
-              value={outputContent}
-              readOnly={true}
-              height="86vh"
-              onChange={() => {}}
-              language="xml"
-            />
-          ) : (
-            <div className="h-full bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center">
-              <span className="text-gray-500">
-                Typescript type will appear here
-              </span>
+        <div className={cn(
+            "flex flex-col transition-all duration-300 ease-in-out min-w-0",
+            expandedSide === "right" ? "flex-[4]" : expandedSide === "left" ? "flex-[1]" : "flex-1"
+          )}>
+          <div className="flex items-center justify-between mb-2">
+             <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Typescript Type
+              </h3>
+               <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => toggleExpand("right")}
+              >
+                {expandedSide === "right" ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
             </div>
-          )}
+            <div className="flex items-center gap-2">
+              <Button onClick={() => handleCopy(outputContent)} size='sm' variant='outline'>
+                <Copy className="w-4 h-4" />
+              </Button>
+              {outputContent && (
+                <DownloadDropdown
+                  content={outputContent}
+                  filename="converted-output"
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="flex-1 border rounded-md overflow-hidden">
+            {outputContent ? (
+              <JsonEditor
+                value={outputContent}
+                readOnly={true}
+                height="86vh"
+                onChange={() => {}}
+                language="xml"
+              />
+            ) : (
+              <div className="h-full bg-gray-50 flex items-center justify-center">
+                <span className="text-gray-500">
+                  Typescript type will appear here
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
