@@ -45,7 +45,7 @@ export const convertJsonToCsv = (jsonString: string): string => {
         Object.keys(item).forEach(key => allHeaders.add(key));
       });
       
-      const headers = Array.from(allHeaders).sort();
+      const headers = Array.from(allHeaders)
       
       const csvRows = [
         headers.join(','),
@@ -57,7 +57,7 @@ export const convertJsonToCsv = (jsonString: string): string => {
       return csvRows.join('\n');
     } else if (typeof parsed === 'object' && parsed !== null) {
       const flattened = flattenObject(parsed);
-      const headers = Object.keys(flattened).sort();
+      const headers = Object.keys(flattened)
       
       return [
         headers.join(','),
